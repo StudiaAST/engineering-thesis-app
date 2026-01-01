@@ -10,5 +10,7 @@
 
         public int? ContractorId { get; set; }
         public string? ContractorName { get; set; }
+
+        public string? PhotoUrl { get; set; }
     }
 }

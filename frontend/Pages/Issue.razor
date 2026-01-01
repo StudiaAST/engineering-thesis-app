@@ -17,210 +17,229 @@
         <p class="text-muted">Przeglądaj, dodawaj i modyfikuj zgłoszenia dotyczące usterek.</p>
     </div>
     <div class="col-auto">
-            <button class="btn btn-sm btn-success" @onclick="StartAddingNewIssue">
-                <i class="bi bi-plus-circle me-2"></i>Nowa usterka
-            </button>
+        <button class="btn btn-sm btn-success" @onclick="StartAddingNewIssue">
+            <i class="bi bi-plus-circle me-2"></i>Nowa usterka
+        </button>
     </div>
 </div>
 
-    @if (!string.IsNullOrEmpty(mainAlertMessage))
-    {
-        <div class="alert @mainAlertClass alert-dismissible fade show mb-3" role="alert">
-            @if (mainAlertClass.Contains("success"))
-            {
-                <i class="bi bi-check-circle-fill me-2"></i>
-            }
-            else if (mainAlertClass.Contains("danger"))
-            {
-
-                <i class="bi bi-exclamation-triangle-fill me-2"></i>
-            }
-            else
-            {
-
-                <i class="bi bi-info-circle-fill me-2"></i>
-            }
-
-            @mainAlertMessage
-            <button type="button" class="btn-close" @onclick="() => mainAlertMessage = null"></button>
-        </div>
-    }
-
-    <div class="card shadow mb-4 overflow-hidden">
-        <div class="p-3 border-bottom">
-            <div class="row align-items-end g-3">
-                <div class="col-md-3">
-                    <label for="filterTitle" class="form-label">
-                        <i class="bi bi-search me-1"></i>Tytuł usterki
-                    </label>
-                    <InputText type="text" class="form-control form-control-sm" id="filterTitle" placeholder="Szukaj..." @bind-Value="issueFilterModel.Title" />
-                </div>
-                <div class="col-md-7 text-start">
-                    <button class="btn btn-sm btn-outline-secondary" @onclick="ResetFilters">
-                        <i class="bi bi-arrow-clockwise"></i> Reset
-                    </button>
-                    <button class="btn btn-sm btn-outline-secondary" data-bs-toggle="collapse" data-bs-target="#advancedFiltersCollapse">
-                        <i class="bi bi-funnel me-1"></i>Więcej filtrów
-                    </button>
-                    <button class="btn btn-sm btn-primary" @onclick="ApplyFilters">
-                        <i class="bi bi-check-lg"></i> Zastosuj
-                    </button>
-                </div>
-                <div class="col-md-2">
-                    <label for="sortBy" class="form-label">
-                        <i class="bi bi-sort-alpha-down me-1"></i>Sortowanie
-                    </label>
-                    <select class="form-select form-select-sm" id="sortBy" @bind="sortOption" @bind:after="ApplyFilters">
-                        <option value="title">Tytuł [A-Z]</option>
-                        <option value="status">Status [A-Z]</option>
-                        <option value="contractor">Wykonawca [A-Z]</option>
-                    </select>
-                </div>
-            </div>
-
-            <div id="advancedFiltersCollapse" class="collapse">
-                <hr class="my-3">
-                <div class="row align-items-end g-3">
-                    <div class="col-md-2">
-                        <label for="filterID" class="form-label">
-                            <i class="bi bi-hash me-1"></i>ID
-                        </label>
-                        <InputNumber placeholder="np. 100" min="0" class="form-control form-control-sm" @bind-Value="issueFilterModel.Id" id="filterID" />
-                    </div>
-                    <div class="col-md-3">
-                        <label for="filterStatus" class="form-label">
-                            <i class="bi bi-patch-check me-1"></i>Status
-                        </label>
-                        <select class="form-select form-select-sm" id="filterStatus" @bind="issueFilterModel.Status">
-                            <option value="">-- Wszystkie --</option>
-                            <option value="Nowa">Nowa</option>
-                            <option value="W trakcie">W trakcie</option>
-                            <option value="Zakończona">Zakończona</option>
-                        </select>
-                    </div>
-
-                    <div class="col-md-3">
-                        <label for="filterContractor" class="form-label">
-                            <i class="bi bi-person-lines-fill me-1"></i>Wykonawca
-                        </label>
-                        <select class="form-select form-select-sm" id="filterContractor" @bind="issueFilterModel.ContractorId">
-                            <option value="">-- Wszyscy --</option>
-                            @foreach (var c in contractors)
-                            {
-                                <option value="@c.Id">@c.CompanyName</option>
-                            }
-                        </select>
-                    </div>
-                    <div class="col-md-6 text-end">
-                    </div>
-                </div>
-            </div>
-        </div>
-        @if (isLoading)
+@if (!string.IsNullOrEmpty(mainAlertMessage))
+{
+    <div class="alert @mainAlertClass alert-dismissible fade show mb-3" role="alert">
+        @if (mainAlertClass.Contains("success"))
         {
-            <div class="state-container text-center">
-                <div>
-                    <div class="loading-spinner"></div>
-                    <h4 class="mb-3">Ładowanie danych...</h4>
-                    <p class="text-muted">Proszę czekać, pobieramy dane...</p>
-                </div>
-            </div>
+            <i class="bi bi-check-circle-fill me-2"></i>
         }
-        else if (issues == null)
+        else if (mainAlertClass.Contains("danger"))
         {
-            <div class="state-container">
-                <div>
-                    <div class="state-icon bg-danger bg-opacity-10 text-danger">
-                        <i class="bi bi-x-circle"></i>
-                    </div>
-                    <h4 class="mb-3">Nie udało się pobrać danych z API!</h4>
-                    <p class="text-muted mb-4">Sprawdź połączenie z internetem lub spróbuj ponownie później.</p>
-                </div>
-            </div>
-        }
-        else if (issues.Count == 0)
-        {
-            <div class="state-container">
-                <div>
-                    <div class="state-icon bg-warning bg-opacity-10 text-warning">
-                        <i class="bi bi-inbox"></i>
-                    </div>
-                    <h4 class="mb-3">Brak usterek spełniających kryteria</h4>
-                    <p class="text-muted mb-4">Spróbuj zmienić filtry wyszukiwania lub zresetować wszystkie kryteria.</p>
-                </div>
-            </div>
+            <i class="bi bi-exclamation-triangle-fill me-2"></i>
         }
         else
         {
-            <div class="table-responsive">
-                <table class="table table-hover mb-0">
-                    <thead>
-                        <tr>
-                            <th style="width: 5%;" class="ps-3">ID</th>
-                            <th style="width: 20%;">Tytuł</th>
-                            <th style="width: 35%;">Opis</th>
-                            <th style="width: 10%;">Lokalizacja</th>
-                            <th style="width: 10%;">Status</th>
-                            <th style="width: 10%;">Wykonawca</th>
-                            <th style="width: 10%;" class="text-center">Akcje</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var i in issues)
+            <i class="bi bi-info-circle-fill me-2"></i>
+        }
+
+        @mainAlertMessage
+        <button type="button" class="btn-close" @onclick="() => mainAlertMessage = null"></button>
+    </div>
+}
+
+<div class="card shadow mb-4 overflow-hidden">
+    <div class="p-3 border-bottom">
+        <div class="row align-items-end g-3">
+            <div class="col-md-3">
+                <label for="filterTitle" class="form-label">
+                    <i class="bi bi-search me-1"></i>Tytuł usterki
+                </label>
+                <InputText type="text" class="form-control form-control-sm" id="filterTitle" placeholder="Szukaj..."
+                    @bind-Value="issueFilterModel.Title" />
+            </div>
+            <div class="col-md-7 text-start">
+                <button class="btn btn-sm btn-outline-secondary" @onclick="ResetFilters">
+                    <i class="bi bi-arrow-clockwise"></i> Reset
+                </button>
+                <button class="btn btn-sm btn-outline-secondary" data-bs-toggle="collapse"
+                    data-bs-target="#advancedFiltersCollapse">
+                    <i class="bi bi-funnel me-1"></i>Więcej filtrów
+                </button>
+                <button class="btn btn-sm btn-primary" @onclick="ApplyFilters">
+                    <i class="bi bi-check-lg"></i> Zastosuj
+                </button>
+            </div>
+            <div class="col-md-2">
+                <label for="sortBy" class="form-label">
+                    <i class="bi bi-sort-alpha-down me-1"></i>Sortowanie
+                </label>
+                <select class="form-select form-select-sm" id="sortBy" @bind="sortOption" @bind:after="ApplyFilters">
+                    <option value="title">Tytuł [A-Z]</option>
+                    <option value="status">Status [A-Z]</option>
+                    <option value="contractor">Wykonawca [A-Z]</option>
+                </select>
+            </div>
+        </div>
+
+        <div id="advancedFiltersCollapse" class="collapse">
+            <hr class="my-3">
+            <div class="row align-items-end g-3">
+                <div class="col-md-2">
+                    <label for="filterID" class="form-label">
+                        <i class="bi bi-hash me-1"></i>ID
+                    </label>
+                    <InputNumber placeholder="np. 100" min="0" class="form-control form-control-sm"
+                        @bind-Value="issueFilterModel.Id" id="filterID" />
+                </div>
+                <div class="col-md-3">
+                    <label for="filterStatus" class="form-label">
+                        <i class="bi bi-patch-check me-1"></i>Status
+                    </label>
+                    <select class="form-select form-select-sm" id="filterStatus" @bind="issueFilterModel.Status">
+                        <option value="">-- Wszystkie --</option>
+                        <option value="Nowa">Nowa</option>
+                        <option value="W trakcie">W trakcie</option>
+                        <option value="Zakończona">Zakończona</option>
+                    </select>
+                </div>
+
+                <div class="col-md-3">
+                    <label for="filterContractor" class="form-label">
+                        <i class="bi bi-person-lines-fill me-1"></i>Wykonawca
+                    </label>
+                    <select class="form-select form-select-sm" id="filterContractor"
+                        @bind="issueFilterModel.ContractorId">
+                        <option value="">-- Wszyscy --</option>
+                        @foreach (var c in contractors)
                         {
-                            <tr>
-                                <td><span class="badge text-bg-primary ms-2">#@i.Id</span></td>
-                                <td>
-                                    <strong>@i.Title</strong>
-                                </td>
-                                <td>
-                                    <div>
-                                        @i.Description
-                                    </div>
-                                </td>
-                                <td>
-                                    <span class="">
-                                        @i.Location
-                                    </span>
-                                </td>
-                                <td>
-                                    <span class="">
-                                        @i.Status
-                                    </span>
-                                </td>
-                                <td>
-                                    <span class="">
-                                        @i.ContractorName
-                                    </span>
-                                </td>
-                                <td class="text-center">
-                                    @*  <AuthorizeView Roles="Admin"> 
-                                    <Authorized> *@
-                                    <button class="btn btn-sm btn-outline-secondary btn-action me-2 my-1 w-100" @onclick="() => EditIssue(i)">
-                                        <i class="bi bi-pencil"></i> Edytuj
-                                    </button>
-                                    <button class="btn btn-sm btn-outline-danger btn-action my-1 w-100" @onclick="() => DeleteIssue(i.Id)">
-                                        <i class="bi bi-trash"></i> Usuń
-                                    </button>
-                                 @*    </Authorized>
-                                 </AuthorizeView>  *@
-                                </td>
-                            </tr>
+                            <option value="@c.Id">@c.CompanyName</option>
                         }
-                    </tbody>
-                </table>
-                <div class="p-3 bg-light border-top">
-                    <div class="row align-items-center">
-                        <div class="col-12">
-                            <small class="text-muted">
-                                <span>Znalezione rekordy: @issues.Count</span>
-                            </small>
-                        </div>
+                    </select>
+                </div>
+                <div class="col-md-6 text-end">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @if (isLoading)
+    {
+        <div class="state-container text-center">
+            <div>
+                <div class="loading-spinner"></div>
+                <h4 class="mb-3">Ładowanie danych...</h4>
+                <p class="text-muted">Proszę czekać, pobieramy dane...</p>
+            </div>
+        </div>
+    }
+    else if (issues == null)
+    {
+        <div class="state-container">
+            <div>
+                <div class="state-icon bg-danger bg-opacity-10 text-danger">
+                    <i class="bi bi-x-circle"></i>
+                </div>
+                <h4 class="mb-3">Nie udało się pobrać danych z API!</h4>
+                <p class="text-muted mb-4">Sprawdź połączenie z internetem lub spróbuj ponownie później.</p>
+            </div>
+        </div>
+    }
+    else if (issues.Count == 0)
+    {
+        <div class="state-container">
+            <div>
+                <div class="state-icon bg-warning bg-opacity-10 text-warning">
+                    <i class="bi bi-inbox"></i>
+                </div>
+                <h4 class="mb-3">Brak usterek spełniających kryteria</h4>
+                <p class="text-muted mb-4">Spróbuj zmienić filtry wyszukiwania lub zresetować wszystkie kryteria.</p>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th style="width: 5%;" class="ps-3">ID</th>
+                        <th style="width: 15%;">Zdjęcie</th>
+                        <th style="width: 15%;">Tytuł</th>
+                        <th style="width: 30%;">Opis</th>
+                        <th style="width: 10%;">Lokalizacja</th>
+                        <th style="width: 10%;">Status</th>
+                        <th style="width: 10%;">Wykonawca</th>
+                        <th style="width: 10%;" class="text-center">Akcje</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    @foreach (var i in issues)
+                    {
+                        <tr>
+                            <td><span class="badge text-bg-primary ms-2">#@i.Id</span></td>
+                            <td>
+                                @if (!string.IsNullOrWhiteSpace(i.PhotoUrl))
+                                {
+                                    <a href="@($"{ApiBase}{i.PhotoUrl}")" target="_blank" rel="noopener">
+                                        <img src="@($"{ApiBase}{i.PhotoUrl}")"
+                                            style="width:60px;height:60px;object-fit:cover;border-radius:6px;"
+                                            alt="Zdjęcie usterki" />
+                                    </a>
+                                }
+                                else
+                                {
+                                    <span class="text-muted">brak</span>
+                                }
+                            </td>
+
+                            <td>
+                                <strong>@i.Title</strong>
+                            </td>
+                            <td>
+                                <div>
+                                    @i.Description
+                                </div>
+                            </td>
+                            <td>
+                                <span class="">
+                                    @i.Location
+                                </span>
+                            </td>
+                            <td>
+                                <span class="">
+                                    @i.Status
+                                </span>
+                            </td>
+                            <td>
+                                <span class="">
+                                    @i.ContractorName
+                                </span>
+                            </td>
+                            <td class="text-center">
+                                <button class="btn btn-sm btn-outline-secondary btn-action me-2 my-1 w-100"
+                                    @onclick="() => EditIssue(i)">
+                                    <i class="bi bi-pencil"></i> Edytuj
+                                </button>
+                                <button class="btn btn-sm btn-outline-danger btn-action my-1 w-100"
+                                    @onclick="() => DeleteIssue(i.Id)">
+                                    <i class="bi bi-trash"></i> Usuń
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+            <div class="p-3 bg-light border-top">
+                <div class="row align-items-center">
+                    <div class="col-12">
+                        <small class="text-muted">
+                            <span>Znalezione rekordy: @issues.Count</span>
+                        </small>
                     </div>
                 </div>
             </div>
-        }
-    </div>
+        </div>
+    }
+</div>
+
 <!-- MODAL: Dodawanie / Edycja Usterki -->
 <div class="modal fade" id="issueModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg">
@@ -234,8 +253,7 @@
             <div class="modal-body">
                 <EditForm OnValidSubmit="SaveIssue" EditContext="@editContext">
                     <div class="row">
-                    <DataAnnotationsValidator />
-                    @* <ValidationSummary /> *@
+                        <DataAnnotationsValidator />
                         @if (!string.IsNullOrEmpty(modalErrorMessage))
                         {
                             <div class="alert alert-danger d-flex align-items-center mb-3">
@@ -243,49 +261,50 @@
                                 <div>@modalErrorMessage</div>
                             </div>
                         }
-                    <div class="col-12 mb-3">
-                        <label>Tytuł *</label>
-                        <InputText class="form-control" @bind-Value="issueModel.Title" />
+                        <div class="col-12 mb-3">
+                            <label>Tytuł *</label>
+                            <InputText class="form-control" @bind-Value="issueModel.Title" />
                             <ValidationMessage For="@(() => issueModel.Title)" class="invalid-feedback" />
-                    </div>
+                        </div>
 
-                    <div class="col-12 mb-3">
-                        <label>Opis *</label>
+                        <div class="col-12 mb-3">
+                            <label>Opis *</label>
                             <InputTextArea class="form-control" @bind-Value="issueModel.Description" rows="4" />
                             <ValidationMessage For="@(() => issueModel.Description)" class="invalid-feedback" />
-                    </div>
+                        </div>
 
-                    <div class="col-12 col-md-6 mb-3">
-                        <label>Lokalizacja *</label>
-                        <InputText class="form-control" @bind-Value="issueModel.Location" />
+                        <div class="col-12 col-md-6 mb-3">
+                            <label>Lokalizacja *</label>
+                            <InputText class="form-control" @bind-Value="issueModel.Location" />
                             <ValidationMessage For="@(() => issueModel.Location)" class="invalid-feedback" />
-                    </div>
+                        </div>
 
-                    <div class="col-12 col-md-6 mb-3">
-                        <label>Status *</label>
-                        <select class="form-select" @bind="issueModel.Status">
-                            <option value="Nowa">Nowa</option>
-                            <option value="W trakcie">W trakcie</option>
-                            <option value="Zakończona">Zakończona</option>
-                        </select>
+                        <div class="col-12 col-md-6 mb-3">
+                            <label>Status *</label>
+                            <select class="form-select" @bind="issueModel.Status">
+                                <option value="Nowa">Nowa</option>
+                                <option value="W trakcie">W trakcie</option>
+                                <option value="Zakończona">Zakończona</option>
+                            </select>
                             <ValidationMessage For="@(() => issueModel.Status)" class="invalid-feedback" />
-                    </div>
+                        </div>
 
-                    <div class="col-12 col-md-6 mb-3">
-                        <label>Wykonawca *</label>
-                        <select class="form-select" @bind="issueModel.ContractorId">
-                            @foreach (var c in contractors)
-                            {
-                                <option value="@c.Id">@c.CompanyName</option>
-                            }
-                        </select>
+                        <div class="col-12 col-md-6 mb-3">
+                            <label>Wykonawca *</label>
+                            <select class="form-select" @bind="issueModel.ContractorId">
+                                @foreach (var c in contractors)
+                                {
+                                    <option value="@c.Id">@c.CompanyName</option>
+                                }
+                            </select>
                             <ValidationMessage For="@(() => issueModel.ContractorId)" class="invalid-feedback" />
-                    </div>
+                        </div>
 
-                    <div class="col-12 col-md-6 mb-3">
-                        <label for="formImage">Zdjęcie</label>
-                        <InputFile OnChange="HandleFileSelected" class="form-control" accept="image/*" id="formImage" />
-                    </div>
+                        <div class="col-12 col-md-6 mb-3">
+                            <label for="formImage">Zdjęcie</label>
+                            <InputFile OnChange="HandleFileSelected" class="form-control" accept="image/*"
+                                id="formImage" />
+                        </div>
                     </div>
 
                     <div class="text-end">
@@ -299,11 +318,13 @@
     </div>
 </div>
 
-
-
 @code {
+    // <<< TU USTAW URL BACKENDU (tam gdzie leci API i wwwroot/photos) >>>
+    private const string ApiBase = "http://localhost:5150";
+
     [CascadingParameter]
     private Task<AuthenticationState> authenticationStateTask { get; set; }
+
     private List<IssueListDto>? issues;
     private List<ContractorDto> contractors = new();
     private IssueDto issueModel = new();
@@ -333,13 +354,11 @@
 
         if (user.Identity != null && user.Identity.IsAuthenticated)
         {
-            // Użytkownik jest zalogowany
             await LoadContractors();
             await ApplyFilters();
         }
         else
         {
-            // To się rzadko wykona dzięki [Authorize], ale dla pewności:
             Navigation.NavigateTo("/login");
         }
     }
@@ -349,7 +368,7 @@
         try
         {
             contractors = await Http.GetFromJsonAsync<List<ContractorDto>>("api/Contractor/search?ActiveOnly=true")
-                           ?? new List<ContractorDto>();
+            ?? new List<ContractorDto>();
         }
         catch (Exception ex)
         {
@@ -358,7 +377,6 @@
         }
     }
 
-
     private async Task ApplyFilters()
     {
         isLoading = true;
@@ -366,10 +384,8 @@
 
         try
         {
-            // 1. Używamy opcji sortowania z UI
             issueFilterModel.SortBy = sortOption;
 
-            // 2. Budowanie Query String
             var queryParams = new List<string>();
 
             if (issueFilterModel.Id.HasValue)
@@ -388,13 +404,10 @@
 
             var queryString = queryParams.Any() ? "?" + string.Join("&", queryParams) : "";
 
-            // 3. Wywołanie JEDNEGO endpointu Search
-            // UWAGA: Issues musi przyjąć nowy typ IssueListDto
             issues = await Http.GetFromJsonAsync<List<IssueListDto>>($"api/Issue/search{queryString}");
         }
         catch (HttpRequestException ex) when (ex.StatusCode == HttpStatusCode.Unauthorized)
         {
-            // Token wygasł w trakcie działania aplikacji
             Navigation.NavigateTo("/login");
         }
         catch (Exception ex)
@@ -468,7 +481,7 @@
 
     private async Task SaveIssue()
     {
-        modalErrorMessage = null; // Czyścimy błędy w modalu
+        modalErrorMessage = null;
         mainAlertMessage = null;
 
         try
@@ -477,7 +490,6 @@
 
             if (editMode)
             {
-                // aktualizacja danych
                 response = await Http.PutAsJsonAsync($"api/Issue/{issueModel.Id}", issueModel);
 
                 if (!response.IsSuccessStatusCode)
@@ -488,7 +500,6 @@
 
                 string successMsg = "Usterka została pomyślnie zaktualizowana!";
 
-                // zdjęcie przy edycji (opcjonalnie)
                 if (selectedFile != null)
                 {
                     using var content = new MultipartFormDataContent();
@@ -499,20 +510,17 @@
 
                     if (!photoResponse.IsSuccessStatusCode)
                     {
-                        // BŁĄD ZDJĘCIA: Przerywamy działanie
-                        // Modal zostaje otwarty, żeby użytkownik wiedział, że zdjęcie nie przeszło
                         modalErrorMessage = $"Dane tekstowe zapisane, ale wystąpił błąd zdjęcia: {photoResponse.StatusCode}";
                         return;
                     }
 
-                    // SUKCES ZDJĘCIA: Nadpisujemy komunikat na ten, który chciałaś
                     successMsg = "Zdjęcie zostało zaktualizowane!";
                 }
+
                 ShowAlert(successMsg, "success");
             }
             else
             {
-                // dodawanie nowej usterki z opcjonalnym zdjęciem
                 using var content = new MultipartFormDataContent();
                 content.Add(new StringContent(issueModel.Title ?? ""), "Title");
                 content.Add(new StringContent(issueModel.Description ?? ""), "Description");
@@ -532,9 +540,8 @@
 
                 if (!response.IsSuccessStatusCode)
                 {
-                    // BŁĄD: Zostajemy w modalu
                     modalErrorMessage = $"Nie udało się dodać usterki. Kod błędu: {response.StatusCode}";
-                    return; // PRZERYWAMY - nie zamykamy modala
+                    return;
                 }
 
                 ShowAlert("Nowa usterka została dodana pomyślnie!", "success");
@@ -545,18 +552,13 @@
             issueModel = new IssueDto();
             selectedFile = null;
             await ApplyFilters();
-
         }
         catch (Exception ex)
         {
             if (ex.Message.Contains("Failed to fetch") || ex.Message.Contains("TypeError"))
-            {
                 modalErrorMessage = "Nie można połączyć się z serwerem. Sprawdź połączenie z internetem lub spróbuj później.";
-            }
             else
-            {
                 modalErrorMessage = $"Wystąpił nieoczekiwany błąd: {ex.Message}";
-            }
         }
     }
 
@@ -579,7 +581,6 @@
         }
     }
 
-
     private void HandleFileSelected(InputFileChangeEventArgs e)
     {
         selectedFile = e.File;
@@ -588,7 +589,6 @@
     private Task ShowModal() => JSRuntime.InvokeVoidAsync("showModal", "issueModal").AsTask();
     private Task HideModal() => JSRuntime.InvokeVoidAsync("hideModal", "issueModal").AsTask();
 
-    // DTO do formularza (Blazor)
     public class IssueDto
     {
         [Required(ErrorMessage = "Tytuł jest wymagany.")]
@@ -606,7 +606,6 @@
         [Required(ErrorMessage = "Wybór wykonawcy jest wymagany.")]
         public int? ContractorId { get; set; }
 
-        // potrzebne przy edycji (nie mapujemy z API, ustawiamy ręcznie)
         public int Id { get; set; }
     }
 
@@ -646,5 +645,6 @@
         public string Status { get; set; } = "";
         public int? ContractorId { get; set; }
         public string? ContractorName { get; set; }
+        public string? PhotoUrl { get; set; }
     }
 }
