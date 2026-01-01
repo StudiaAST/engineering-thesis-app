@@ -1,0 +1,22 @@
+{
+  "name": "constructhub-frontend",
+  "version": "1.0.0",
+  "description": "",
+  "repository": {
+    "type": "git",
+    "url": "https://chx99419@dev.azure.com/chx99419/Praca%20in%C5%BCynierska/_git/Frontend"
+  },
+  "license": "ISC",
+  "author": "",
+  "type": "commonjs",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "bootstrap": "^5.3.8"
+  },
+  "devDependencies": {
+    "eslint": "^9.39.1"
+  }
+}

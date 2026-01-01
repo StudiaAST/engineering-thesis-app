@@ -1,0 +1,48 @@
+# .NET Core build outputs
+bin/
+obj/
+
+# User-specific files
+.vs/
+.vscode/
+.idea/
+
+# ASP.NET Core / Blazor specific
+appsettings.Development.json
+appsettings.Production.json
+appsettings.Staging.json
+
+# Logs
+*.log
+
+# Node.js modules (if using Node.js for frontend development, e.g., with npm or yarn)
+node_modules/
+
+# Local configuration files
+.idea/
+.vscode/
+
+# OS-generated files
+.DS_Store
+Thumbs.db
+
+# NPM and Yarn lock files (if using npm/yarn for frontend)
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Build output
+/dist
+/build
+
+# Published app (if running a publish)
+publish/
+
+# JetBrains Rider/IntelliJ IDEA project files
+.idea/
+
+# ReSharper project files
+.idea/
+
+# JetBrains Rider-specific files
+.idea/.idea_modules

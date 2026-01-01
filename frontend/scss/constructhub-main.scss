@@ -1,0 +1,272 @@
+﻿// ============================================================================
+// PALETA KOLORÓW - System Zarządzania Budowlany
+// ============================================================================
+
+// ----------------------------------------------------------------------------
+// 1. KOLORY MARKI (Brand Colors)
+// ----------------------------------------------------------------------------
+$brand-orange: #E03C00; // Główny pomarańczowy
+$brand-orange-light-alt: #FFC3AD; // Jaśniejszy pomarańczowy
+$brand-orange-light: #FF8C61; // Jaśniejszy pomarańczowy
+$brand-orange-dark: #E85A28; // Ciemniejszy pomarańczowy
+$brand-black: #1A1A1A; // Czarny marki
+$brand-gray: #6C757D; // Szary marki
+
+// ----------------------------------------------------------------------------
+// 2. NADPISANIE KOLORÓW BOOTSTRAP (Theme Colors Override)
+// ----------------------------------------------------------------------------
+$primary: $brand-orange;
+$secondary: $brand-gray;
+$dark: $brand-black;
+
+// Pozostałe kolory Bootstrap (zachowaj lub dostosuj)
+$success: #208337;
+$info: #128091;
+$warning: #FFC107;
+$danger: #DC3545;
+$light: #F3F5F7;
+
+// ----------------------------------------------------------------------------
+// 3. SKALA SZAROŚCI (Grayscale)
+// ----------------------------------------------------------------------------
+$gray-100: #F8F9FA; // Tła, subtle borders
+$gray-200: #E9ECEF; // Lżejsze obramowania
+$gray-300: #DEE2E6; // Standardowe obramowania
+$gray-400: #CED4DA; // Disabled states
+$gray-500: #ADB5BD; // Placeholdery
+$gray-600: #6C757D; // Tekst pomocniczy (brand-gray)
+$gray-700: #495057; // Tekst drugorzędny
+$gray-800: #343A40; // Tekst główny
+$gray-900: #1A1A1A; // Nagłówki, emphasis (brand-black)
+
+// ----------------------------------------------------------------------------
+// 4. KOLORY SEMANTYCZNE (Semantic Colors)
+// ----------------------------------------------------------------------------
+// Status wykonawcy
+$status-active: #28A745;
+$status-inactive: #6C757D;
+$status-suspended: #FFC107;
+
+// Priorytety usterek
+$priority-critical: #DC3545;
+$priority-high: #FF6B35; // Używamy brand orange
+$priority-medium: #FFC107;
+$priority-low: #17A2B8;
+
+// Stany projektów
+$project-completed: #28A745;
+$project-inprogress: #17A2B8;
+$project-delayed: #FFC107;
+$project-cancelled: #DC3545;
+
+// ----------------------------------------------------------------------------
+// 5. KOLORY TŁA (Background Colors)
+// ----------------------------------------------------------------------------
+$body-bg: #FFFFFF;
+$body-secondary-bg: $gray-100;
+$card-bg: #FFFFFF;
+$navbar-bg: $brand-black;
+
+// Gradients dla akcentów
+$gradient-primary: linear-gradient(135deg, $brand-orange 0%, $brand-orange-dark 100%);
+$gradient-dark: linear-gradient(135deg, $brand-black 0%, lighten($brand-black, 10%) 100%);
+
+// ----------------------------------------------------------------------------
+// 6. KOLORY TEKSTU (Text Colors)
+// ----------------------------------------------------------------------------
+$body-color: $gray-800;
+$headings-color: $brand-black;
+$text-muted: $gray-600;
+$link-color: $brand-orange;
+$link-hover-color: $brand-orange-dark;
+
+// ----------------------------------------------------------------------------
+// 7. KOMPONENTY BOOTSTRAP - Customizacja
+// ----------------------------------------------------------------------------
+
+// Buttons
+$btn-border-radius: 0.375rem;
+$btn-padding-y: 0.625rem;
+$btn-padding-x: 1.25rem;
+$btn-font-weight: 600;
+
+// Cards
+//$card-border-radius: 0.75rem;
+//$card-border-color: $gray-200;
+//$card-box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+
+// Tables
+$table-hover-bg: $gray-100;
+$table-border-color: $gray-300;
+$table-head-bg: $gray-100;
+$table-head-color: $brand-black;
+
+// Forms
+$input-border-color: $gray-300;
+$input-focus-border-color: $brand-orange;
+$input-focus-box-shadow: 0 0 0 0.25rem rgba(255, 107, 53, 0.25);
+$input-placeholder-color: $gray-500;
+
+// Navbar
+$navbar-dark-color: rgba(255, 255, 255, 0.9);
+$navbar-dark-hover-color: $brand-orange-light-alt;
+$navbar-dark-active-color: $brand-orange-light;
+$navbar-dark-brand-color: #FFFFFF;
+
+// Badges
+$badge-border-radius: 0.375rem;
+$badge-padding-y: 0.5rem;
+$badge-padding-x: 0.75rem;
+
+// Pagination
+$pagination-color: $brand-orange;
+$pagination-hover-color: $brand-orange-dark;
+$pagination-active-bg: $brand-orange;
+$pagination-active-border-color: $brand-orange;
+
+// Modals
+$modal-content-border-radius: 0.75rem;
+$modal-header-border-color: $gray-200;
+
+// ----------------------------------------------------------------------------
+// 8. CIENIE I EFEKTY (Shadows & Effects)
+// ----------------------------------------------------------------------------
+$box-shadow-sm: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+$box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.08);
+$box-shadow-lg: 0 1rem 3rem rgba(0, 0, 0, 0.175);
+
+// Hover effects
+$hover-lift: translateY(-2px);
+$hover-shadow: 0 4px 12px rgba(255, 107, 53, 0.3);
+
+// ----------------------------------------------------------------------------
+// 9. SPACING (wykorzystaj Bootstrap spacing utilities)
+// ----------------------------------------------------------------------------
+$spacer: 1rem;
+$spacers: ( 0: 0, 1: $spacer * 0.25, 2: $spacer * 0.5, 3: $spacer, 4: $spacer * 1.5, 5: $spacer * 3, 6: $spacer * 4.5, 7: $spacer * 6, );
+
+// ----------------------------------------------------------------------------
+// 10. TYPOGRAPHY
+// ----------------------------------------------------------------------------
+$font-family-base: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+$font-size-base: 1rem;
+$font-weight-normal: 400;
+$font-weight-semibold: 600;
+$font-weight-bold: 700;
+
+$h1-font-size: 2.5rem;
+$h2-font-size: 2rem;
+$h3-font-size: 1.75rem;
+$h4-font-size: 1.5rem;
+$h5-font-size: 1.25rem;
+$h6-font-size: 1rem;
+
+$headings-font-weight: 700;
+
+$min-contrast-ratio: 4;
+
+$enable-gradients: true;
+
+//$enable-shadows: true;
+
+$enable-rounded: false;
+
+// ----------------------------------------------------------------------------
+// 11. IMPORTOWANIE BOOTSTRAP
+// ----------------------------------------------------------------------------
+// Po zdefiniowaniu zmiennych, zaimportuj Bootstrap:
+// import Bootstrap
+@import '../node_modules/bootstrap/scss/bootstrap.scss';
+
+// ----------------------------------------------------------------------------
+// 12. CUSTOM UTILITY CLASSES (Opcjonalne)
+// ----------------------------------------------------------------------------
+/*
+Przykłady użycia po kompilacji:
+
+.bg-brand-orange { background-color: $brand-orange; }
+.text-brand-orange { color: $brand-orange; }
+.border-brand-orange { border-color: $brand-orange; }
+
+.btn-primary -> pomarańczowy
+.btn-secondary -> szary
+.btn-dark -> czarny
+
+.badge-success -> zielony (aktywny)
+.badge-danger -> czerwony (krytyczny)
+.badge-warning -> żółty (ostrzeżenie)
+*/
+
+// ----------------------------------------------------------------------------
+// 13. PRZYKŁADOWE KOMPONENTY Z GRADIENTAMI
+// ----------------------------------------------------------------------------
+
+// Przykład: Card header z gradientem
+.card-header-gradient {
+    background: $gradient-dark;
+    color: white;
+}
+
+// Przykład: Navbar z gradientem
+.navbar-gradient {
+    background: $gradient-dark !important;
+}
+
+// Przykład: Button z gradientem
+.btn-gradient-primary {
+    background: $gradient-primary;
+    border: none;
+    color: white;
+
+    &:hover {
+        background: linear-gradient(135deg, $brand-orange-dark 0%, darken($brand-orange-dark, 10%) 100%);
+        transform: $hover-lift;
+        box-shadow: $hover-shadow;
+    }
+}
+
+// Przykład: Alert z brand colors
+.alert-brand {
+    background-color: lighten($brand-orange, 35%);
+    border-color: $brand-orange-light;
+    color: $brand-orange-dark;
+}
+
+// ----------------------------------------------------------------------------
+// 14. INSTRUKCJE UŻYCIA
+// ----------------------------------------------------------------------------
+/*
+INSTALACJA:
+1. Zainstaluj Bootstrap przez npm:
+   npm install bootstrap
+
+2. Stwórz plik custom.scss w swoim projekcie
+
+3. Wklej powyższe zmienne PRZED importem Bootstrap:
+   
+   // Twoje custom variables
+   $primary: #FF6B35;
+   ... (wszystkie zmienne z tego pliku)
+   
+   // Import Bootstrap
+   @import "node_modules/bootstrap/scss/bootstrap";
+
+4. Kompiluj SCSS do CSS:
+   npm install -g sass
+   sass custom.scss custom.css
+
+5. Linkuj skompilowany CSS w HTML:
+   <link rel="stylesheet" href="custom.css">
+
+UŻYCIE W PROJEKCIE:
+- Wszystkie komponenty Bootstrap automatycznie użyją nowych kolorów
+- btn-primary będzie pomarańczowy
+- Linki będą pomarańczowe
+- Focus states będą pomarańczowe
+- Navbar-dark będzie używał brand-black
+
+DODATKOWE KLASY:
+.bg-brand-orange, .text-brand-orange, .border-brand-orange
+.bg-status-active, .bg-priority-high
+.card-header-gradient, .btn-gradient-primary
+*/

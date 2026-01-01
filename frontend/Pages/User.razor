@@ -1,0 +1,740 @@
+﻿@page "/users"
+@using System.Net.Http.Json
+@inject HttpClient Http
+@inject IJSRuntime JSRuntime
+@attribute [Authorize]
+@attribute [Authorize(Roles = "Admin")]
+@using System.ComponentModel.DataAnnotations
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Authorization
+@inject NavigationManager Navigation
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@using System.Net
+@using CHFrontend.Components
+@using CHFrontend.Helpers
+
+<div class="row align-items-center mb-4">
+    <div class="col">
+        <h2 class="fw-bold">Użytkownicy</h2>
+        <p class="text-muted">Zarządzaj dostępem do aplikacji.</p>
+    </div>
+    <div class="col-auto">
+        <button class="btn btn-sm btn-success" @onclick="OpenAddModal">
+            <i class="bi bi-person-plus-fill me-2"></i>Dodaj użytkownika
+        </button>
+    </div>
+</div>
+
+@if (!string.IsNullOrEmpty(mainAlertMessage))
+{
+    <div class="alert @mainAlertClass alert-dismissible fade show mb-3" role="alert">
+        @if (mainAlertClass.Contains("success"))
+        {
+            <i class="bi bi-check-circle-fill me-2"></i>
+        }
+        else if (mainAlertClass.Contains("danger"))
+        {
+            <i class="bi bi-exclamation-triangle-fill me-2"></i>
+        }
+        else
+        {
+            <i class="bi bi-info-circle-fill me-2"></i>
+        }
+
+        @mainAlertMessage
+        <button type="button" class="btn-close" @onclick="() => mainAlertMessage = null"></button>
+    </div>
+}
+
+@if (isLoading)
+{
+    <div class="card shadow mb-4 overflow-hidden">
+        <div class="state-container text-center">
+            <div>
+                <div class="loading-spinner"></div>
+                <h4 class="mb-3">Ładowanie danych...</h4>
+                <p class="text-muted">Proszę czekać, pobieramy dane...</p>
+            </div>
+        </div>
+    </div>
+}
+else if (isForbidden)
+{
+    <div class="card shadow mb-4 overflow-hidden border-danger">
+        <div class="state-container">
+            <div>
+                <div class="state-icon bg-danger text-white">
+                    <i class="bi bi-shield-lock-fill"></i>
+                </div>
+                <h4 class="mb-3 text-danger">Brak wystarczających uprawnień</h4>
+                <p class="text-muted mb-4">
+                    Nie masz uprawnień do przeglądania listy użytkowników.<br />
+                    Ta sekcja jest dostępna tylko dla Administratorów.
+                </p>
+                <button class="btn btn-outline-secondary" @onclick="@(() => Navigation.NavigateTo("/"))">
+                    <i class="bi bi-arrow-left me-1"></i> Wróć na stronę główną
+                </button>
+            </div>
+        </div>
+    </div>
+}
+else if (users == null)
+{
+    <div class="card shadow mb-4 overflow-hidden">
+        <div class="state-container">
+            <div>
+                <div class="state-icon bg-danger bg-opacity-10 text-danger">
+                    <i class="bi bi-x-circle"></i>
+                </div>
+                <h4 class="mb-3">Nie udało się pobrać danych z API!</h4>
+                <p class="text-muted mb-4">Sprawdź połączenie z internetem lub spróbuj ponownie później.</p>
+            </div>
+        </div>
+    </div>
+}
+else if (users.Count == 0)
+{
+    <div class="card shadow mb-4 overflow-hidden">
+        <div class="state-container">
+            <div>
+                <div class="state-icon bg-warning bg-opacity-10 text-warning">
+                    <i class="bi bi-people"></i>
+                </div>
+                <h4 class="mb-3">Brak użytkowników</h4>
+                <p class="text-muted mb-4">W bazie nie ma jeszcze żadnych kont użytkowników.</p>
+                <button class="btn btn-success" @onclick="OpenAddModal">
+                    <i class="bi bi-plus-circle me-1"></i> Dodaj pierwszego
+                </button>
+            </div>
+        </div>
+    </div>
+}
+else 
+{
+    <div class="card shadow mb-4 overflow-hidden">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="">
+                    <tr>
+                        <th style="width: 20%;" class="ps-3">Użytkownik</th>
+                        <th style="width: 20%;">Email</th>
+                        <th style="width: 20%;">Imię i Nazwisko</th>
+                        <th style="width: 10%;">Rola</th>
+                        <th style="width: 10%;" class="text-center">Status</th>
+                        <th style="width: 20%;" class="text-center pe-3">Akcje</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var user in users)
+                    {
+                        <tr class="@(user.IsLocked ? "table-secondary text-muted" : "")">
+                            <td class="ps-3 fw-bold">@user.UserName</td>
+                            <td>@user.Email</td>
+                            <td>@user.FullName</td>
+                            <td>
+                                @if (user.Role == "Admin")
+                                {
+                                    <span class="badge bg-danger">Admin</span>
+                                }
+                                else if (user.Role == "Manager")
+                                {
+
+                                    <span class="badge bg-warning text-dark">Manager</span>
+                                }
+                                else if (user.Role == "Contractor")
+                                {
+
+                                    <span class="badge bg-info text-dark">Wykonawca</span>
+                                }
+                                else
+                                {
+
+                                    <span class="badge bg-secondary">User</span>
+                                }
+                            </td>
+                            <td>
+                                @if (user.IsLocked)
+                                {
+                                    <span class="badge fw-semibold text-danger-emphasis bg-danger-subtle border border-danger-subtle text-bg-danger me-2 my-1 w-100">
+                                        <i class="bi bi-x-circle me-1"></i> Zablokowany
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="badge fw-semibold text-success-emphasis bg-success-subtle border border-success-subtle me-2 my-1 w-100">
+                                        <i class="bi bi-check-circle me-1"></i> Aktywny
+                                    </span>
+                                }
+                            </td>
+                            <td class="text-center pe-3">
+                                <button class="btn btn-sm btn-outline-dark w-100 my-1"
+                                        @onclick="() => OpenRoleModal(user)">
+                                    <i class="bi bi-person-gear me-1"></i> Uprawnienia
+                                </button>
+                                <button class="btn btn-sm @(user.IsLocked ? "btn-outline-success" : "btn-outline-danger") me-2 my-1 w-100"
+                                        @onclick="() => ToggleUserStatus(user)">
+                                    @if (user.IsLocked)
+                                    {
+                                        <span><i class="bi bi-unlock me-1"></i> Odblokuj</span>
+                                    }
+                                    else
+                                    {
+                                        <span><i class="bi bi-lock me-1"></i> Zablokuj</span>
+                                    }
+                                </button>
+                                <button class="btn btn-sm btn-outline-primary w-100 my-1"
+                                        @onclick="() => OpenResetPasswordModal(user)">
+                                    <i class="bi bi-key me-1"></i> Resetuj hasło
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+            <div class="p-3 bg-light border-top">
+                <div class="row align-items-center">
+                    <div class="col-12">
+                        <small class="text-muted">
+                            <span>Znalezione rekordy: @users.Count</span>
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<div class="modal fade" id="userModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Dodaj nowego użytkownika</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <EditForm EditContext="registerUserEditContext" OnValidSubmit="CreateUser">
+                    <DataAnnotationsValidator />
+
+                    @if (!string.IsNullOrEmpty(errorMessage))
+                    {
+                        <div class="alert alert-danger">@errorMessage</div>
+                    }
+
+                    <div class="mb-3">
+                        <label class="form-label" for="login">Nazwa użytkownika (Login)</label>
+                        <InputText class="form-control" @bind-Value="newUser.UserName" id="login" />
+                        <ValidationMessage For="@(() => newUser.UserName)" class="invalid-feedback" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label" for="email">Email</label>
+                        <InputText class="form-control" type="email" @bind-Value="newUser.Email" id="email" />
+                        <ValidationMessage For="@(() => newUser.Email)" class="invalid-feedback" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label" for="fullName" >Imię i Nazwisko</label>
+                        <InputText class="form-control" @bind-Value="newUser.FullName" id="fullName" />
+                        <ValidationMessage For="@(() => newUser.FullName)" class="invalid-feedback" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Rola</label>
+                        <InputSelect class="form-select" @bind-Value="newUser.Role">
+                            <option value="User">Użytkownik (Klient/Inwestor)</option>
+                            <option value="Manager">Manager</option>
+                            <option value="Admin">Administrator</option>
+                            <option value="Contractor">Wykonawca</option>
+                        </InputSelect>
+                    </div>
+
+                    @if (newUser.Role == "Contractor")
+                    {
+                    <div class="mb-3">
+                        <label class="form-label" for="contractorId">Przypisz firmę (Opcjonalne)</label>
+                        <InputSelect class="form-select" @bind-Value="newUser.ContractorId" id="contractorId">
+                            @* Opcja pusta = NULL w bazie (Pracownik wewnętrzny) *@
+                            <option value="">-- Pracownik wewnętrzny --</option>
+
+                            @if (contractorsList != null)
+                            {
+                                foreach (var c in contractorsList)
+                                {
+                                    <option value="@c.Id">@c.CompanyName</option>
+                                }
+                            }
+                        </InputSelect>
+                        <ValidationMessage For="@(() => newUser.ContractorId)" class="invalid-feedback" />
+                        <div class="form-text text-muted">Wybierz tylko dla użytkowników zewnętrznych.</div>
+                    </div>
+                    }
+                    <div class="mb-3">
+                        <label class="form-label" for="startPassword">Hasło startowe</label>
+                        <InputPasswordEye @bind-Value="newUser.Password" id="startPassword" />
+                        <ValidationMessage For="@(() => newUser.Password)" class="text-danger small" />
+                    </div>
+
+                    <div class="text-end">
+                        <button type="button" class="btn btn-secondary me-2" data-bs-dismiss="modal">Anuluj</button>
+                        <button type="submit" class="btn btn-primary">Utwórz konto</button>
+                    </div>
+                </EditForm>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="modal fade" id="resetPasswordModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header modal-header-striped overflow-hidden bg-primary-subtle">
+                <h5 class="modal-title">
+                    Resetowanie hasła użytkownika
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                @if (selectedUserForReset != null)
+                {
+                    <div class="mb-3">
+                        <div class="d-flex align-items-center">
+                            <div>
+                                <h6 class="mb-2">@selectedUserForReset.FullName</h6>
+                                <p class="mb-0 text-muted small">
+                                    <i class="bi bi-person me-1"></i>@selectedUserForReset.UserName
+                                    <span class="mx-2">•</span>
+                                    <i class="bi bi-envelope me-1"></i>@selectedUserForReset.Email
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                }
+
+                <EditForm EditContext="resetPasswordEditContext" OnValidSubmit="SubmitResetPassword">
+                    <DataAnnotationsValidator />
+
+                    @if (!string.IsNullOrEmpty(resetErrorMessage))
+                    {
+                        <div class="alert alert-danger">@resetErrorMessage</div>
+                    }
+
+                    <div class="mb-4">
+                        <label class="form-label" for="password">Nowe hasło jednorazowe</label>
+                        <InputPasswordEye @bind-Value="resetPasswordModel.NewPassword" placeholder="Wpisz nowe hasło..." id="password" />
+                        <ValidationMessage For="@(() => resetPasswordModel.NewPassword)" class="text-danger small" />
+                    </div>
+
+                    <div class="alert alert-primary d-flex align-items-center small py-1 mb-4 shadow-sm">
+                        <i class="bi bi-exclamation-triangle flex-shrink-0 me-2"></i>
+                        <div>
+                            Użytkownik będzie
+                            musiał zmienić hasło przy kolejnym logowaniu.
+                        </div>
+                    </div>
+
+                    <div class="text-end">
+                        <button type="button" class="btn btn-secondary me-2" data-bs-dismiss="modal">Anuluj</button>
+                        <button type="submit" class="btn btn-primary">Ustaw nowe hasło</button>
+                    </div>
+                </EditForm>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="modal fade" id="roleModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-dark text-white">
+                <h5 class="modal-title">Zmień uprawnienia</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                @if (selectedUserForRole != null)
+                {
+                    <div class="alert alert-secondary mb-3">
+                        Edytujesz uprawnienia dla: <strong>@selectedUserForRole.UserName</strong>
+                        <br />Obecna rola: <strong>@selectedUserForRole.Role</strong>
+                    </div>
+                }
+
+                <EditForm Model="changeRoleModel" OnValidSubmit="SubmitRoleChange">
+                    <DataAnnotationsValidator />
+
+                    @if (!string.IsNullOrEmpty(roleErrorMessage))
+                    {
+                        <div class="alert alert-danger">@roleErrorMessage</div>
+                    }
+
+                    <div class="mb-3">
+                        <label class="form-label">Wybierz nową rolę</label>
+                        <InputSelect class="form-select" @bind-Value="changeRoleModel.NewRole">
+                            <option value="User">Użytkownik (Klient/Inwestor)</option>
+                            <option value="Manager">Manager</option>
+                            <option value="Admin">Administrator</option>
+                            <option value="Contractor">Wykonawca (Firma zewnętrzna)</option>
+                        </InputSelect>
+                    </div>
+
+                    @* Pokaż wybór firmy TYLKO jeśli wybrano rolę Contractor *@
+                    @if (changeRoleModel.NewRole == "Contractor")
+                    {
+                        <div class="mb-3">
+                            <label class="form-label">Wybierz firmę</label>
+                            <InputSelect class="form-select" @bind-Value="changeRoleModel.ContractorId">
+                                <option value="">-- Wybierz firmę --</option>
+                                @foreach (var c in contractorsList)
+                                {
+                                    <option value="@c.Id">@c.CompanyName</option>
+                                }
+                            </InputSelect>
+                            <div class="form-text text-danger">Wymagane dla roli Wykonawca.</div>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="text-muted small mb-3">
+                            <i class="bi bi-info-circle"></i> Zmiana na rolę inną niż Wykonawca usunie przypisanie do firmy.
+                        </div>
+                    }
+
+                    <div class="text-end">
+                        <button type="button" class="btn btn-secondary me-2" data-bs-dismiss="modal">Anuluj</button>
+                        <button type="submit" class="btn btn-dark">Zapisz uprawnienia</button>
+                    </div>
+                </EditForm>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [CascadingParameter]
+    private Task<AuthenticationState> authenticationStateTask { get; set; }
+    private List<UserDto>? users;
+    private RegisterDto newUser = new();
+
+    private List<ContractorSimpleDto> contractorsList = new();
+
+    private bool isLoading = true;
+
+    private string? errorMessage;
+    private string? resetErrorMessage;
+
+    private string? mainAlertMessage;
+    private string mainAlertClass = "alert-success";
+
+    private UserDto? selectedUserForReset;
+    private AdminResetPasswordDto resetPasswordModel = new();
+
+    private EditContext registerUserEditContext;
+    private EditContext resetPasswordEditContext;
+    private bool isForbidden = false;
+
+    private UserDto? selectedUserForRole;
+    private ChangeUserRoleDto changeRoleModel = new();
+    private string? roleErrorMessage;
+
+    protected override void OnInitialized()
+    {
+        registerUserEditContext = new(newUser);
+        registerUserEditContext.SetFieldCssClassProvider(new BootstrapFieldCssClassProvider());
+
+        resetPasswordEditContext = new(resetPasswordModel);
+        resetPasswordEditContext.SetFieldCssClassProvider(new BootstrapFieldCssClassProvider());
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await authenticationStateTask;
+        if (authState.User.Identity != null && authState.User.Identity.IsAuthenticated)
+        {
+            await LoadUsers();
+            await LoadContractors();
+        }
+        else
+        {
+            Navigation.NavigateTo("/login");
+        }
+    }
+
+    private async Task LoadUsers()
+    {
+        isLoading = true;
+        isForbidden = false;
+        users = null;
+
+        try
+        {
+            users = await Http.GetFromJsonAsync<List<UserDto>>("api/users");
+        }
+        catch (HttpRequestException ex) when (ex.StatusCode == HttpStatusCode.Unauthorized) //401
+        {
+            Navigation.NavigateTo("/login");
+        }
+        catch (HttpRequestException ex) when (ex.StatusCode == HttpStatusCode.Forbidden) // 403
+        {
+            isForbidden = true;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Błąd pobierania: {ex.Message}");
+            ShowAlert("Nie udało się połączyć z serwerem API. Sprawdź połączenie z internetem.", "danger");
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task LoadContractors()
+    {
+        try
+        {
+            // Zakładam, że masz endpoint zwracający wszystkich wykonawców.
+            // Jeśli nie masz, zaraz podam kod do backendu.
+            // Używamy "contractorsList", żeby nie mylić z główną listą userów.
+            contractorsList = await Http.GetFromJsonAsync<List<ContractorSimpleDto>>("api/contractor/all-simple")
+                              ?? new List<ContractorSimpleDto>();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Nie udało się pobrać listy wykonawców: {ex.Message}");
+            // Nie blokujemy aplikacji, po prostu lista będzie pusta
+        }
+    }
+
+    private async Task ToggleUserStatus(UserDto user)
+    {
+        mainAlertMessage = null;
+
+        var action = user.IsLocked ? "odblokować" : "zablokować";
+        var confirmed = await JSRuntime.InvokeAsync<bool>("confirm", $"Czy na pewno chcesz {action} użytkownika {user.UserName}?");
+
+        if (confirmed)
+        {
+            try
+            {
+                var response = await Http.PutAsync($"api/users/{user.Id}/toggle-status", null);
+                if (response.IsSuccessStatusCode)
+                {
+                    await LoadUsers(); // Odśwież listę
+                    var actionPast = user.IsLocked ? "odblokowany" : "zablokowany"; // Logika odwrócona, bo user wciąż ma stary stan przed przeładowaniem, albo po prostu:
+                    ShowAlert($"Pomyślnie zmieniono status użytkownika {user.UserName}.", "success");
+                }
+                else if (response.StatusCode == HttpStatusCode.Unauthorized)
+                {
+                    Navigation.NavigateTo("/login");
+                }
+                else
+                {
+                    ShowAlert("Wystąpił błąd podczas zmiany statusu.", "danger");
+                }
+            }
+            catch { ShowAlert("Błąd połączenia z serwerem przy zmianie statusu.", "danger"); }
+        }
+    }
+
+
+    private void OpenAddModal()
+    {
+        errorMessage = null;
+
+        newUser = new RegisterDto();
+        errorMessage = null;
+
+        registerUserEditContext = new(newUser);
+        registerUserEditContext.SetFieldCssClassProvider(new BootstrapFieldCssClassProvider());
+
+        // Wywołanie JS bootstrap modal show
+        JSRuntime.InvokeVoidAsync("showModal", "userModal");
+    }
+
+    private async Task CreateUser()
+    {
+        errorMessage = null;
+        try
+        {
+            var response = await Http.PostAsJsonAsync("api/Users", newUser);
+
+            if (response.IsSuccessStatusCode)
+            {
+                await JSRuntime.InvokeVoidAsync("hideModal", "userModal");
+                await LoadUsers();
+                ShowAlert($"Użytkownik {newUser.UserName} został pomyślnie utworzony!", "success");
+            }
+            else if (response.StatusCode == HttpStatusCode.Unauthorized)
+            {
+                Navigation.NavigateTo("/login");
+            }
+            else
+            {
+                // Próbujemy odczytać błędy z Identity (tablica błędów)
+                var errorContent = await response.Content.ReadAsStringAsync();
+                errorMessage = "Nie udało się utworzyć użytkownika. Sprawdź czy hasło jest wystarczająco silne.";
+            }
+        }
+        catch
+        {
+            errorMessage = "Błąd połączenia z serwerem.";
+        }
+    }
+
+    private void OpenResetPasswordModal(UserDto user)
+    {
+
+        selectedUserForReset = user;
+        resetPasswordModel = new AdminResetPasswordDto();
+        resetErrorMessage = null;
+
+        resetPasswordEditContext = new(resetPasswordModel);
+        resetPasswordEditContext.SetFieldCssClassProvider(new BootstrapFieldCssClassProvider());
+
+        // Otwieramy modal przez JS
+        JSRuntime.InvokeVoidAsync("showModal", "resetPasswordModal");
+    }
+
+    private async Task SubmitResetPassword()
+    {
+        if (selectedUserForReset == null) return;
+
+        resetErrorMessage = null;
+
+        try
+        {
+            var response = await Http.PostAsJsonAsync($"api/users/{selectedUserForReset.Id}/reset-password", resetPasswordModel);
+
+            if (response.IsSuccessStatusCode)
+            {
+                await JSRuntime.InvokeVoidAsync("hideModal", "resetPasswordModal");
+                ShowAlert($"Hasło dla {selectedUserForReset.UserName} zostało zresetowane.", "success");
+                selectedUserForReset = null;
+            }
+            else if (response.StatusCode == HttpStatusCode.Unauthorized)
+            {
+                Navigation.NavigateTo("/login");
+            }
+            else
+            {
+                var errorContent = await response.Content.ReadAsStringAsync();
+                resetErrorMessage = "Błąd: " + errorContent.Trim('"');
+            }
+        }
+        catch
+        {
+            resetErrorMessage = "Błąd połączenia z serwerem.";
+        }
+
+    }
+
+    private void OpenRoleModal(UserDto user)
+    {
+        selectedUserForRole = user;
+        roleErrorMessage = null;
+
+        // Inicjalizacja modelu
+        changeRoleModel = new ChangeUserRoleDto
+        {
+            // Ustawiamy domyślnie obecną rolę (lub User jeśli pusta)
+            NewRole = !string.IsNullOrEmpty(user.Role) ? user.Role : "User",
+            ContractorId = null
+        };
+
+        JSRuntime.InvokeVoidAsync("showModal", "roleModal");
+    }
+
+    private async Task SubmitRoleChange()
+    {
+        if (selectedUserForRole == null) return;
+        roleErrorMessage = null;
+
+        // Walidacja frontendu dla Wykonawcy
+        if (changeRoleModel.NewRole == "Contractor" && changeRoleModel.ContractorId == null)
+        {
+            roleErrorMessage = "Musisz wybrać firmę dla roli Wykonawca.";
+            return;
+        }
+
+        try
+        {
+            var response = await Http.PostAsJsonAsync($"api/users/{selectedUserForRole.Id}/change-role", changeRoleModel);
+
+            if (response.IsSuccessStatusCode)
+            {
+                await JSRuntime.InvokeVoidAsync("hideModal", "roleModal");
+                ShowAlert($"Uprawnienia dla {selectedUserForRole.UserName} zostały zmienione.", "success");
+                await LoadUsers(); // Odśwież listę, żeby zobaczyć nową rolę w tabeli
+            }
+            else
+            {
+                var error = await response.Content.ReadAsStringAsync();
+                roleErrorMessage = "Błąd: " + error.Trim('"');
+            }
+        }
+        catch (Exception ex)
+        {
+            roleErrorMessage = "Błąd połączenia: " + ex.Message;
+        }
+    }
+
+    private void ShowAlert(string message, string type = "success")
+    {
+        mainAlertMessage = message;
+        mainAlertClass = $"alert-{type}";
+
+        _ = Task.Delay(5000).ContinueWith(async _ =>
+        {
+            mainAlertMessage = null;
+            await InvokeAsync(StateHasChanged);
+        });
+    }
+
+    public class UserDto
+    {
+        public string Id { get; set; }
+        public string UserName { get; set; }
+        public string Email { get; set; }
+        public string FullName { get; set; }
+        public bool IsLocked { get; set; }
+        public string Role { get; set; }
+    }
+
+    public class RegisterDto
+    {
+        [Required(ErrorMessage = "Nazwa użytkownika jest wymagana.")]
+        public string UserName { get; set; }
+
+        [Required(ErrorMessage = "Adres e-mail jest wymagany.")]
+        public string Email { get; set; }
+
+        [Required(ErrorMessage = "Imię i nazwisko są wymagane.")]
+        public string FullName { get; set; }
+
+        [Required(ErrorMessage = "Hasło startowe jest wymagane.")]
+        public string Password { get; set; }
+
+        public string Role { get; set; } = "User";
+
+        public int? ContractorId { get; set; }
+    }
+
+    public class AdminResetPasswordDto
+    {
+        [Required(ErrorMessage = "Hasło jest wymagane.")]
+        [MinLength(6, ErrorMessage = "Hasło musi mieć minimum 6 znaków.")]
+        public string NewPassword { get; set; }
+    }
+
+    public class ContractorSimpleDto
+    {
+        public int Id { get; set; }
+        public string CompanyName { get; set; }
+    }
+
+    public class ChangeUserRoleDto
+    {
+        [Required]
+        public string NewRole { get; set; }
+
+        // Opcjonalne, tylko jeśli rola to "Contractor"
+        public int? ContractorId { get; set; }
+    }
+}

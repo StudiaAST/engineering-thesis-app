@@ -1,0 +1,28 @@
+﻿@page "/fetch"
+@inject HttpClient Http
+
+<h3>Test API call</h3>
+
+<p>@message</p>
+
+@code {
+    private string message = "Loading...";
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var response = await Http.GetFromJsonAsync<ApiResponse>("api/test");
+            message = response?.message ?? "No message";
+        }
+        catch (Exception ex)
+        {
+            message = $"Error: {ex.Message}";
+        }
+    }
+
+    class ApiResponse
+    {
+        public string message { get; set; }
+    }
+}

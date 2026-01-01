@@ -1,0 +1,104 @@
+﻿@page "/"
+
+<PageTitle>Home</PageTitle>
+
+<div class="row">
+    <div class="col">
+        <h2 class="fw-bold"> Pulpit</h2>
+        <p class="text-muted">Witaj w systemie zarządzania projektami budowlanymi ConstructHub!</p>
+    </div>
+</div>
+<div class="row g-3">
+    <div class="col-md-6 col-lg-4 col-xl-3">
+
+            <div class="card quick-action-card shadow-sm h-100">
+                <div class="card-body text-center py-4">
+                    <div class="icon-circle bg-secondary bg-opacity-10 text-secondary mx-auto mb-3">
+                        <i class="bi bi-person-lines-fill"></i>
+                    </div>
+                    <h5 class="card-title">Wykonawcy</h5>
+                    <p class="card-text text-muted">Przeglądaj, dodawaj i edytuj dane wykonawców</p>
+                    <div class="mt-3">
+                    <NavLink href="contractors">
+                            <span class="btn btn-secondary btn-sm">Przejdź <i class="bi bi-arrow-right"></i></span>
+                        </NavLink>
+                    </div>
+                </div>
+            </div>
+
+    </div>
+
+    <div class="col-md-6 col-lg-4 col-xl-3">
+
+            <div class="card quick-action-card shadow-sm h-100">
+                <div class="card-body text-center py-4">
+                    <div class="icon-circle bg-warning bg-opacity-10 text-warning mx-auto mb-3">
+                        <i class="bi bi-wrench"></i>
+                    </div>
+                    <h5 class="card-title">Usterki</h5>
+                    <p class="card-text text-muted">Dodaj nowe zgłoszenie lub sprawdź status</p>
+                    <div class="mt-3">
+                    <NavLink href="issues">
+                            <span class="btn btn-warning btn-sm">Przejdź <i class="bi bi-arrow-right"></i></span>
+                        </NavLink>
+                    </div>
+                </div>
+            </div>
+
+    </div>
+
+    <div class="col-md-6 col-lg-4 col-xl-3">
+
+            <div class="card quick-action-card shadow-sm h-100">
+                <div class="card-body text-center py-4">
+                    <div class="icon-circle bg-success bg-opacity-10 text-success mx-auto mb-3">
+                        <i class="bi bi-file-earmark-post"></i>
+                    </div>
+                    <h5 class="card-title">Zlecenia</h5>
+                    <p class="card-text text-muted">Zobacz wszystkie zlecenia i ich aktualny status</p>
+                    <div class="mt-3">
+                        <NavLink href="contracts">
+                            <span class="btn btn-success btn-sm">Przejdź <i class="bi bi-arrow-right"></i></span>
+                        </NavLink>
+                    </div>
+                </div>
+            </div>
+
+    </div>
+
+    <div class="col-md-6 col-lg-4 col-xl-3">
+
+        <div class="card quick-action-card shadow-sm h-100">
+            <div class="card-body text-center py-4">
+                <div class="icon-circle bg-success bg-opacity-10 text-success mx-auto mb-3">
+                    <i class="bi bi-file-earmark-check"></i>
+                </div>
+                <h5 class="card-title">Protokoły</h5>
+                <p class="card-text text-muted">Zobacz wszystkie protokoły odbioru oraz ich aktualny status</p>
+                <div class="mt-3">
+                    <NavLink href="contracts">
+                        <span class="btn btn-success btn-sm">Przejdź <i class="bi bi-arrow-right"></i></span>
+                    </NavLink>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="col-md-6 col-lg-4 col-xl-3">
+
+            <div class="card quick-action-card shadow-sm h-100">
+                <div class="card-body text-center py-4">
+                    <div class="icon-circle bg-info bg-opacity-10 text-info mx-auto mb-3">
+                        <i class="bi bi-file-earmark-bar-graph"></i>
+                    </div>
+                    <h5 class="card-title">Raporty (wkrótce)</h5>
+                    <p class="card-text text-muted">Generuj raporty i analizy</p>
+                    <div class="mt-3">
+                        <span class="btn btn-info btn-sm">Przejdź <i class="bi bi-arrow-right"></i></span>
+                    </div>
+                </div>
+            </div>
+
+    </div>
+</div>

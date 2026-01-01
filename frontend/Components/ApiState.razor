@@ -1,0 +1,78 @@
+﻿@typeparam TItem
+@using System.Collections
+
+@if (IsLoading)
+{
+    <div class="card shadow mb-4 overflow-hidden">
+        <div class="state-container text-center py-5">
+            <div class="spinner-border text-primary mb-3" role="status"></div>
+            <h4 class="mb-2">Ładowanie danych...</h4>
+            <p class="text-muted">Proszę czekać, pobieramy dane z serwera.</p>
+        </div>
+    </div>
+}
+else if (IsForbidden)
+{
+    <div class="card shadow mb-4 overflow-hidden border-danger">
+        <div class="state-container text-center py-5">
+            <div class="state-icon text-danger mb-3" style="font-size: 3rem;">
+                <i class="bi bi-shield-lock-fill"></i>
+            </div>
+            <h4 class="mb-3 text-danger">Brak wystarczających uprawnień</h4>
+            <p class="text-muted mb-4">
+                Nie masz uprawnień do przeglądania tej sekcji.<br />
+                Skontaktuj się z administratorem, jeśli uważasz, że to błąd.
+            </p>
+        </div>
+    </div>
+}
+else if (!string.IsNullOrEmpty(ErrorMessage))
+{
+    <div class="card shadow mb-4 overflow-hidden">
+        <div class="state-container text-center py-5">
+            <div class="state-icon text-danger mb-3" style="font-size: 3rem;">
+                <i class="bi bi-wifi-off"></i>
+            </div>
+            <h4 class="mb-3">Wystąpił błąd</h4>
+            <p class="text-muted">@ErrorMessage</p>
+        </div>
+    </div>
+}
+else if (Data == null)
+{
+    @* Stan, gdy nie ma błędu, ale dane są null (rzadkie, ale możliwe) *@
+    <div class="alert alert-warning">Dane są niedostępne.</div>
+}
+else if (Data is ICollection list && list.Count == 0)
+{
+    <div class="card shadow mb-4 overflow-hidden">
+        <div class="state-container text-center py-5">
+            <div class="state-icon text-warning mb-3" style="font-size: 3rem;">
+                <i class="bi bi-inbox"></i>
+            </div>
+            <h4 class="mb-3">Brak danych</h4>
+            <p class="text-muted mb-4">W bazie nie ma jeszcze żadnych rekordów.</p>
+
+            @* Tu wyświetlimy przycisk dodawania, jeśli został przekazany *@
+            @if (EmptyContent != null)
+            {
+                @EmptyContent
+            }
+        </div>
+    </div>
+}
+else
+{
+    @* Jeśli wszystko OK -> wyświetl tabelę *@
+    @ChildContent
+}
+
+@code {
+    [Parameter] public bool IsLoading { get; set; }
+    [Parameter] public bool IsForbidden { get; set; }
+    [Parameter] public string? ErrorMessage { get; set; }
+    [Parameter] public TItem Data { get; set; } // Lista danych (np. List<UserDto>)
+
+    [Parameter] public RenderFragment ChildContent { get; set; } // Tabela
+    [Parameter] public RenderFragment? EmptyContent { get; set; } // Przycisk dodawania (opcjonalny)
+}

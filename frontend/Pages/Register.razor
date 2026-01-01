@@ -1,0 +1,206 @@
+﻿@page "/register"
+@using System.Net.Http.Json
+@inject HttpClient Http
+@using System.ComponentModel.DataAnnotations
+@using CHFrontend.Helpers
+
+@if (isSuccess)
+{
+    <div class="alert alert-success">
+        Konto zostało pomyślnie utworzone
+    </div>
+}
+else if (!string.IsNullOrEmpty(errorMessage))
+{
+    <div class="alert alert-danger" style="white-space: pre-wrap;">@errorMessage</div>
+}
+
+<div class="row justify-content-center py-4">
+    <div class="col-md-5 col-xl-5">
+        <div id="registerPage" class="auth-page">
+            <div class="card overflow-hidden shadow">
+                <div class="text-center bg-primary px-2 py-4 text-light">
+                    <div class="icon-circle-large">
+                        <i class="bi bi-person-plus"></i>
+                    </div>
+                    <h3 class="mb-2 text-light">Rejestracja</h3>
+                    <p class="mb-0">Utwórz nowe konto</p>
+                </div>
+                <div class="card-body p-4">
+                <EditForm EditContext="editContext" OnValidSubmit="HandleRegister">
+                    <DataAnnotationsValidator />
+                        <div class="mb-3">
+                            <label for="registerUsername" class="form-label">Login</label>
+                            <div class="input-group">
+                                <span class="input-group-text">
+                                    <i class="bi bi-person"></i>
+                                </span>
+                                <InputText class="form-control" @bind-Value="registerModel.UserName" placeholder="Wybierz login" />
+                                <ValidationMessage For="@(() => registerModel.UserName)" class="invalid-feedback" />
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="registerFullName" class="form-label">Pełne imię i nazwisko</label>
+                            <div class="input-group">
+                                <span class="input-group-text">
+                                    <i class="bi bi-person-badge"></i>
+                                </span>
+                                <InputText class="form-control" @bind-Value="registerModel.FullName" placeholder="np. Jan Kowalski" />
+                                <ValidationMessage For="@(() => registerModel.FullName)" class="invalid-feedback" />
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="registerEmail" class="form-label">Email</label>
+                            <div class="input-group">
+                                <span class="input-group-text">
+                                    <i class="bi bi-envelope"></i>
+                                </span>
+                                <InputText class="form-control" @bind-Value="registerModel.Email" placeholder="Twój adres e-mail" />
+                                <ValidationMessage For="@(() => registerModel.Email)" class="invalid-feedback" />
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="registerPassword" class="form-label">Hasło</label>
+                            <div class="input-group">
+                                <span class="input-group-text">
+                                    <i class="bi bi-lock"></i>
+                                </span>
+                                <InputText class="form-control" @bind-Value="registerModel.Password" type="password" placeholder="Wprowadź silne hasło" />
+                                <ValidationMessage For="@(() => registerModel.Password)" class="invalid-feedback" />
+                            </div>
+                            @* <div class="form-text">
+                                <i class="bi bi-info-circle me-1"></i>Hasło powinno mieć min. 8 znaków
+                            </div> *@
+                        </div>
+
+                        <button type="submit" class="btn btn-outline-primary w-100 btn-auth">
+                            <i class="bi bi-check-circle me-2"></i>Utwórz konto
+                        </button>
+                    </EditForm>
+
+                    <div class="divider">
+                        <span>lub</span>
+                    </div>
+
+                    <div class="text-center">
+                        <p class="mb-0">
+                            Masz już konto?
+                            <NavLink class="text-primary fw-semibold text-decoration-none" href="login">
+                                Zaloguj się
+                            </NavLink>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private string TranslateErrorCode(string code)
+    {
+        return code switch
+        {
+            // Poprawiono z "PasswordRequireDigit" na "PasswordRequiresDigit"
+            "PasswordRequiresDigit" => "Hasło musi zawierać co najmniej jedną cyfrę (0-9).",
+
+            // Poprawiono z "PasswordRequiredUpper" na "PasswordRequiresUpper"
+            "PasswordRequiresUpper" => "Hasło musi zawierać co najmniej jedną wielką literę (A-Z).",
+
+            "PasswordRequiresNonAlphanumeric" => "Hasło musi zawierać co najmniej jeden znak specjalny (np. !@#$%^&).",
+            "PasswordRequiredLower" => "Hasło musi zawierać co najmniej jedną małą literę (a-z).",
+            "PasswordTooShort" => "Hasło jest za krótkie. Wymagane jest min. 8 znaków.",
+            "DuplicateUserName" => "Użytkownik o podanym loginie już istnieje.",
+            "DuplicateEmail" => "Użytkownik o podanym adresie e-mail już istnieje.",
+            "PasswordRequiresUniqueChars" => "Hasło zawiera zbyt mało unikalnych znaków.",
+            _ => $"Nieznany błąd serwera: {code}",
+        };
+    }
+
+    private RegisterModel registerModel = new();
+    private bool isSuccess = false;
+    private string? errorMessage;
+
+    private EditContext editContext;
+
+    protected override void OnInitialized()
+    {
+        editContext = new(registerModel);
+        editContext.SetFieldCssClassProvider(new BootstrapFieldCssClassProvider());
+    }
+
+    private async Task HandleRegister()
+    {
+        try
+        {
+            var response = await Http.PostAsJsonAsync("api/auth/register", registerModel);
+
+            if (response.IsSuccessStatusCode)
+            {
+                isSuccess = true;
+                errorMessage = null;
+                registerModel = new(); // wyczyść formularz
+            }
+            else
+            {
+                var errorContent = await response.Content.ReadAsStringAsync();
+
+                try
+                {
+                    // Spróbuj sparsować błędy Identity (oczekujemy tablicy IdentityError)
+                    var identityErrors = System.Text.Json.JsonSerializer.Deserialize<List<IdentityError>>(errorContent, new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+
+                    if (identityErrors != null && identityErrors.Any())
+                    {
+                        errorMessage = "Rejestracja nie powiodła się z powodu niespełnionych wymagań hasła:\n";
+                        foreach (var error in identityErrors)
+                        {
+                            // Użyj metody tłumaczącej kod błędu
+                            errorMessage += $"\n* {TranslateErrorCode(error.Code)}";
+                        }
+                    }
+                    else
+                    {
+                        // Fallback, jeśli parsowanie się nie uda lub dostaniemy inny format
+                        errorMessage = $"Błąd rejestracji (Status: {response.StatusCode}): {errorContent}";
+                    }
+                }
+                catch (System.Text.Json.JsonException)
+                {
+                    // Jeśli otrzymano nieprawidłowy format JSON, wyświetl surową wiadomość
+                    errorMessage = $"Błąd rejestracji (Status: {response.StatusCode}): {errorContent}";
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Błąd połączenia: {ex.Message}";
+        }
+    }
+
+    public class RegisterModel
+    {
+        [Required(ErrorMessage = "Login jest wymagany.")]
+        public string UserName { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Imię i nazwisko są wymagane.")]
+        public string FullName { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Adres e-mail jest wymagany.")]
+        [EmailAddress(ErrorMessage = "Nieprawidłowy format adresu e-mail.")]
+        public string Email { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Hasło jest wymagane.")]
+        [MinLength(6, ErrorMessage = "Hasło musi mieć minimum 6 znaków.")]
+        public string Password { get; set; } = string.Empty;
+    }
+
+    public class IdentityError
+    {
+        public string Code { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
+    }
+}

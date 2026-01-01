@@ -1,0 +1,15 @@
+﻿@inject NavigationManager Navigation
+@inject AuthService AuthService
+@using CHFrontend.Services
+
+<button class="btn btn-sm btn-primary" @onclick="Logout">
+    <i class="bi bi-box-arrow-right"></i> Wyloguj
+</button>
+
+@code {
+    private async Task Logout()
+    {
+        await AuthService.Logout(); // 🔹 automatycznie powiadomi UI
+        Navigation.NavigateTo("/login", forceLoad: true);
+    }
+}

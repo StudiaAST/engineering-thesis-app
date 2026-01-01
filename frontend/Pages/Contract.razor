@@ -1,0 +1,607 @@
+﻿@page "/contracts"
+@using CHFrontend.Models
+@using CHFrontend.Helpers
+@inject HttpClient Http
+@inject NavigationManager Navigation
+@inject IJSRuntime JSRuntime
+
+@attribute [Authorize]
+@inject AuthenticationStateProvider AuthenticationStateProvider
+
+<div class="row align-items-center">
+    <div class="col">
+        <h2 class="fw-bold"> Zlecenia</h2>
+        <p class="text-muted">Przeglądaj, dodawaj i modyfikuj zlecenia.</p>
+    </div>
+    <div class="col-auto">
+        <button class="btn btn-sm btn-success" @onclick="StartAddingNewContract">
+            <i class="bi bi-plus-circle me-2"></i>Nowe zlecenie
+        </button>
+    </div>
+</div>
+
+@if (!string.IsNullOrEmpty(mainAlertMessage))
+{
+    <div class="alert @mainAlertClass alert-dismissible fade show mb-3" role="alert">
+        @if (mainAlertClass.Contains("success"))
+        {
+            <i class="bi bi-check-circle-fill me-2"></i>
+        }
+        else if (mainAlertClass.Contains("danger"))
+        {
+
+            <i class="bi bi-exclamation-triangle-fill me-2"></i>
+        }
+        else
+        {
+
+            <i class="bi bi-info-circle-fill me-2"></i>
+        }
+
+        @mainAlertMessage
+        <button type="button" class="btn-close" @onclick="() => mainAlertMessage = null"></button>
+    </div>
+}
+
+<div class="card shadow mb-4 overflow-hidden">
+    <div class="p-3 border-bottom">
+        <div class="row align-items-end g-3">
+            <div class="col-md-3">
+                <label for="filterName" class="form-label">
+                    <i class="bi bi-search me-1"></i>Nazwa zlecenia
+                </label>
+                <InputText type="text" class="form-control form-control-sm" id="filterName" placeholder="Szukaj..."
+                    @bind-Value="contractFilterModel.Name" />
+            </div>
+            <div class="col-md-6 text-start">
+                <button class="btn btn-sm btn-outline-secondary" @onclick="ResetFilters">
+                    <i class="bi bi-arrow-clockwise"></i> Reset
+                </button>
+                <button class="btn btn-sm btn-outline-secondary" data-bs-toggle="collapse"
+                    data-bs-target="#advancedFiltersCollapse">
+                    <i class="bi bi-funnel me-1"></i>Więcej filtrów
+                </button>
+                <button class="btn btn-sm btn-primary" @onclick="ApplyFilters">
+                    <i class="bi bi-check-lg"></i> Zastosuj
+                </button>
+            </div>
+            <div class="col-md-3">
+                <label for="sortBy" class="form-label">
+                    <i class="bi bi-sort-alpha-down me-1"></i>Sortowanie
+                </label>
+                <select class="form-select form-select-sm" id="sortBy" @bind="sortOption" @bind:after="ApplyFilters">
+                    <option value="Name">Nazwa [A-Z]</option>
+                    <option value="NameDesc">Nazwa [Z-A]</option>
+                    <option value="StartDate">Data początkowa [od najstarszych]</option>
+                    <option value="StartDateDesc">Data początkowa [od najnowszych]</option>
+                    <option value="EndDate">Data końcowa [od najstarszych]</option>
+                    <option value="EndDateDesc">Data końcowa [od najnowszych]</option>
+                </select>
+            </div>
+        </div>
+
+        <div id="advancedFiltersCollapse" class="collapse">
+            <hr class="my-3">
+            <div class="row align-items-end g-3">
+                <div class="col-md-2">
+                    <label for="filterID" class="form-label">
+                        <i class="bi bi-hash me-1"></i>ID
+                    </label>
+                    <InputNumber placeholder="np. 100" min="0" class="form-control form-control-sm"
+                        @bind-Value="contractFilterModel.Id" id="filterID" />
+                </div>
+                <div class="col-md-2">
+                    <label for="filterContractNumber" class="form-label">
+                        <i class="bi bi-hash me-1"></i>Numer zlecenia
+                    </label>
+                    <InputText placeholder="np. 22/2024" class="form-control form-control-sm"
+                        @bind-Value="contractFilterModel.ContractNumber" id="filterContractNumber" />
+                </div>
+                <div class="col-md-3">
+                    <label for="filterStatus" class="form-label">
+                        <i class="bi bi-patch-check me-1"></i>Status
+                    </label>
+                    <select class="form-select form-select-sm" id="filterStatus" @bind="contractFilterModel.Status">
+                        <option value="">-- Wszystkie --</option>
+                        <option value="Nowe">Nowa</option>
+                        <option value="W trakcie">W trakcie</option>
+                        <option value="Zakończona">Zakończone</option>
+                    </select>
+                </div>
+
+                <div class="col-md-3">
+                    <label for="filterContractor" class="form-label">
+                        <i class="bi bi-person-lines-fill me-1"></i>Wykonawca
+                    </label>
+                    <select class="form-select form-select-sm" id="filterContractor"
+                        @bind="contractFilterModel.ContractorId">
+                        <option value="">-- Wszyscy --</option>
+                        @foreach (var c in contractors)
+                        {
+                            <option value="@c.Id">@c.CompanyName</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-6 text-end">
+                </div>
+            </div>
+        </div>
+    </div>
+    @if (isLoading)
+    {
+        <div class="state-container text-center">
+            <div>
+                <div class="loading-spinner"></div>
+                <h4 class="mb-3">Ładowanie danych...</h4>
+                <p class="text-muted">Proszę czekać, pobieramy dane...</p>
+            </div>
+        </div>
+    }
+    else if (contracts == null)
+    {
+        <div class="state-container">
+            <div>
+                <div class="state-icon bg-danger bg-opacity-10 text-danger">
+                    <i class="bi bi-x-circle"></i>
+                </div>
+                <h4 class="mb-3">Nie udało się pobrać danych z API!</h4>
+                <p class="text-muted mb-4">Sprawdź połączenie z internetem lub spróbuj ponownie później.</p>
+            </div>
+        </div>
+    }
+    else if (contracts.Count == 0)
+    {
+        <div class="state-container">
+            <div>
+                <div class="state-icon bg-warning bg-opacity-10 text-warning">
+                    <i class="bi bi-inbox"></i>
+                </div>
+                <h4 class="mb-3">Brak zleceń spełniających kryteria</h4>
+                <p class="text-muted mb-4">Spróbuj zmienić filtry wyszukiwania lub zresetować wszystkie kryteria.</p>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th style="width: 5%;" class="ps-3">ID</th>
+                        <th style="width: 15%;">Nazwa</th>
+                        <th style="width: 10%;">Numer zlecenia</th>
+                        <th style="width: 20%;">Opis</th>
+                        <th style="width: 10%;">Data początkowa</th>
+                        <th style="width: 10%;">Data końcowa</th>
+                        <th style="width: 10%;">Status</th>
+                        <th style="width: 10%;">Wykonawca</th>
+                        <th style="width: 10%;" class="text-center">Akcje</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var c in contracts)
+                    {
+                        <tr>
+                            <td><span class="badge text-bg-primary ms-2">#@c.Id</span></td>
+                            <td>
+                                <strong>
+                                    @c.Name
+                                </strong>
+                            </td>
+                            <td>
+                                <span>@c.ContractNumber</span>
+                            </td>
+                            <td>
+                                <span class="">
+                                    @c.Description
+                                </span>
+                            </td>
+                            <td>
+                                <span class="">
+                                    @c.StartDate.GetDateTimeFormats('d')[0]
+                                </span>
+                            </td>
+                            <td>
+                                <span class="">
+                                    @c.EndDate.GetDateTimeFormats('d')[0]
+                                </span>
+                            </td>
+                            <td>
+                                <span class="">
+                                    @c.Status
+                                </span>
+                            </td>
+                            <td>
+                                <span class="">
+                                    @c.ContractorName
+                                </span>
+                            </td>
+                            <td class="text-center">
+                                @*  <AuthorizeView Roles="Admin"> 
+                                    <Authorized> *@
+                                <NavLink class="btn btn-sm btn-outline-info btn-action me-2 my-1 w-100"
+                                    href="@($"contract-details/{c.Id}")">
+                                    <i class="bi bi-eye"></i> Otwórz
+                                </NavLink>
+                                <button class="btn btn-sm btn-outline-secondary btn-action me-2 my-1 w-100"
+                                    @onclick="() => EditContract(c)">
+                                    <i class="bi bi-pencil"></i> Edytuj
+                                </button>
+                                <button class="btn btn-sm btn-outline-danger btn-action my-1 w-100"
+                                    @onclick="() => DeleteContract(c.Id)">
+                                    <i class="bi bi-trash"></i> Usuń
+                                </button>
+                                @*    </Authorized>
+                                 </AuthorizeView>  *@
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+            <div class="p-3 bg-light border-top">
+                <div class="row align-items-center">
+                    <div class="col-12">
+                        <small class="text-muted">
+                            <span>Znalezione rekordy: @contracts.Count</span>
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+<!-- MODAL: Add / Edit Contract -->
+<div class="modal fade" id="contractModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+
+            <div class="modal-header">
+                <h5 class="modal-title">@modalTitle</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+
+            <div class="modal-body">
+                <EditForm OnValidSubmit="SaveContract" EditContext="@editContext">
+                    <div class="row">
+                        <DataAnnotationsValidator />
+                        @if (!string.IsNullOrEmpty(modalErrorMessage))
+                        {
+                            <div class="alert alert-danger d-flex align-items-center mb-3">
+                                <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                                <div>@modalErrorMessage</div>
+                            </div>
+                        }
+
+                        <div class="col-12 col-md-3 mb-3">
+                            <label for="contractNumber">Numer zlecenia *</label>
+                            <InputText class="form-control" @bind-Value="contractModel.ContractNumber"
+                                id="contractNumber" />
+                            <ValidationMessage For="@(() => contractModel.ContractNumber)" class="invalid-feedback" />
+                        </div>
+
+                        <div class="col-12 col-md-9 mb-3">
+                            <label for="contractName">Nazwa zlecenia *</label>
+                            <InputText class="form-control" @bind-Value="contractModel.Name" id="contractName" />
+                            <ValidationMessage For="@(() => contractModel.Name)" class="invalid-feedback" />
+                        </div>
+
+                        <div class="col-12 mb-3">
+                            <label for="contractDescription">Opis przedmiotu zlecenia *</label>
+                            <InputTextArea class="form-control" @bind-Value="contractModel.Description" rows="4"
+                                id="contractDescription" />
+                            <ValidationMessage For="@(() => contractModel.Description)" class="invalid-feedback" />
+                        </div>
+
+                        <div class="col-12 col-md-6 mb-3">
+                            <label for="contractStartDate">Data początkowa</label>
+                            <InputDate class="form-control" @bind-Value="contractModel.StartDate"
+                                id="contractStartDate" />
+                            <ValidationMessage For="@(() => contractModel.StartDate)" class="invalid-feedback" />
+                        </div>
+
+                        <div class="col-12 col-md-6 mb-3">
+                            <label for="contractEndDate">Data końcowa</label>
+                            <InputDate class="form-control" @bind-Value="contractModel.EndDate" id="contractEndDate" />
+                            <ValidationMessage For="@(() => contractModel.EndDate)" class="invalid-feedback" />
+                        </div>
+
+                        <div class="col-12 col-md-6 mb-3">
+                            <label for="contractStatus">Status *</label>
+                            <select class="form-select" @bind="contractModel.Status" id="contractStatus">
+                                <option value="Nowa">Nowa</option>
+                                <option value="W trakcie">W trakcie</option>
+                                <option value="Zakończona">Zakończona</option>
+                            </select>
+                            <ValidationMessage For="@(() => contractModel.Status)" class="invalid-feedback" />
+                        </div>
+
+                        <div class="col-12 col-md-6 mb-3">
+                            <label>Wykonawca *</label>
+                            <select class="form-select" @bind="contractModel.ContractorId">
+                                @foreach (var c in contractors)
+                                {
+                                    <option value="@c.Id">@c.CompanyName</option>
+                                }
+                            </select>
+                            <ValidationMessage For="@(() => contractModel.ContractorId)" class="invalid-feedback" />
+                        </div>
+                    </div>
+
+                    <div class="text-end">
+                        <button class="btn btn-primary" type="submit">
+                            @(editMode ? "Zapisz zmiany" : "Dodaj zlecenie")
+                        </button>
+                    </div>
+                </EditForm>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [CascadingParameter]
+    private Task<AuthenticationState> authenticationStateTask { get; set; }
+    private List<ContractListDto>? contracts;
+    private List<ContractorDto> contractors = new();
+    private bool isLoading = true;
+    private bool editMode = false;
+    private ContractDto contractModel = new();
+    private EditContext editContext;
+
+    private ContractFilterDto contractFilterModel = new ContractFilterDto();
+    private string sortOption = "StartDateDesc";
+    private string? mainAlertMessage;
+    private string? modalErrorMessage;
+    private string mainAlertClass = "alert-success";
+    private string modalTitle = "Dodaj zlecenie";
+
+    protected override void OnInitialized()
+    {
+        editContext = new(contractModel);
+        editContext.SetFieldCssClassProvider(new BootstrapFieldCssClassProvider());
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await authenticationStateTask;
+        var user = authState.User;
+
+        if (user.Identity != null && user.Identity.IsAuthenticated)
+        {
+            // Użytkownik jest zalogowany
+            await LoadContractors();
+            await ApplyFilters();
+        }
+        else
+        {
+            // To się rzadko wykona dzięki [Authorize], ale dla pewności:
+            Navigation.NavigateTo("/login");
+        }
+    }
+
+    private async Task LoadContractors()
+    {
+        try
+        {
+            contractors = await Http.GetFromJsonAsync<List<ContractorDto>>("api/Contractor/search?ActiveOnly=true")
+            ?? new List<ContractorDto>();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Błąd ładowania wykonawców: {ex.Message}");
+            contractors = new List<ContractorDto>();
+        }
+    }
+
+    private async Task ApplyFilters()
+    {
+        isLoading = true;
+        contracts = null;
+
+        try
+        {
+            contractFilterModel.SortBy = sortOption;
+
+            var queryParams = new List<string>();
+
+            if (contractFilterModel.Id.HasValue)
+            {
+                queryParams.Add($"Id={contractFilterModel.Id.Value}");
+            }
+
+            if (!string.IsNullOrWhiteSpace(contractFilterModel.ContractNumber))
+            {
+                queryParams.Add($"ContractNumber={Uri.EscapeDataString(contractFilterModel.ContractNumber)}");
+            }
+
+            if (!string.IsNullOrWhiteSpace(contractFilterModel.Name))
+            {
+                queryParams.Add($"Name={Uri.EscapeDataString(contractFilterModel.Name)}");
+            }
+
+            if (!string.IsNullOrWhiteSpace(contractFilterModel.Status))
+            {
+                queryParams.Add($"Status={Uri.EscapeDataString(contractFilterModel.Status)}");
+            }
+
+            if (contractFilterModel.ContractorId.HasValue)
+            {
+                queryParams.Add($"contractorId={contractFilterModel.ContractorId.Value}");
+            }
+
+            queryParams.Add($"SortBy={Uri.EscapeDataString(contractFilterModel.SortBy)}");
+
+            var queryString = queryParams.Any() ? "?" + string.Join("&", queryParams) : "";
+
+            // Przykładowe wywołanie API do pobrania zleceń z filtrami
+            contracts = await Http.GetFromJsonAsync<List<ContractListDto>>($"api/Contract/search{queryString}");
+        }
+        catch (Exception ex)
+        {
+            mainAlertMessage = "Wystąpił błąd podczas ładowania zleceń.";
+            mainAlertClass = "alert-danger";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task ResetFilters()
+    {
+        contractFilterModel = new();
+        sortOption = "StartDateDesc";
+        await ApplyFilters();
+    }
+
+    private Task ShowModal() => JSRuntime.InvokeVoidAsync("showModal", "contractModal").AsTask();
+    private Task HideModal() => JSRuntime.InvokeVoidAsync("hideModal", "contractModal").AsTask();
+
+    private async Task StartAddingNewContract()
+    {
+        contractModel = new ContractDto
+        {
+            Status = "Nowa",
+            ContractorId = contractors.Count > 0 ? contractors.First().Id : null,
+            StartDate = DateTime.Today,
+            EndDate = DateTime.Today.AddDays(7)
+        };
+
+        editMode = false;
+        modalTitle = "Dodaj nowe zlecenie";
+
+        editContext = new(contractModel);
+        editContext.SetFieldCssClassProvider(new BootstrapFieldCssClassProvider());
+
+        await ShowModal();
+    }
+
+    private async Task EditContract(ContractListDto c)
+    {
+        contractModel = new ContractDto
+        {
+            ContractNumber = c.ContractNumber,
+            Name = c.Name,
+            Description = c.Description,
+            StartDate = c.StartDate,
+            EndDate = c.EndDate,
+            Status = c.Status,
+            ContractorId = c.ContractorId,
+            Id = c.Id
+        };
+
+        editMode = true;
+        modalTitle = $"Edytuj zlecenie ({c.ContractNumber})";
+
+        editContext = new(contractModel);
+        editContext.SetFieldCssClassProvider(new BootstrapFieldCssClassProvider());
+
+        await ShowModal();
+    }
+
+    private async Task SaveContract()
+    {
+        modalErrorMessage = null; // Czyścimy błędy w modalu
+        mainAlertMessage = null;
+
+        try
+        {
+            HttpResponseMessage? response = null;
+
+            if (editMode)
+            {
+                // aktualizacja danych
+                using var content = new MultipartFormDataContent();
+                content.Add(new StringContent(contractModel.Name ?? ""), "Name");
+                content.Add(new StringContent(contractModel.ContractNumber ?? ""), "ContractNumber");
+                content.Add(new StringContent(contractModel.Description ?? ""), "Description");
+                content.Add(new StringContent(contractModel.StartDate.ToString("o")), "StartDate");
+                content.Add(new StringContent(contractModel.EndDate.ToString("o")), "EndDate");
+                content.Add(new StringContent(contractModel.Status ?? "Nowa"), "Status");
+                content.Add(new StringContent(contractModel.ContractorId?.ToString() ?? ""), "ContractorId");
+                response = await Http.PutAsync($"api/Contract/{contractModel.Id}", content);
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    modalErrorMessage = $"Błąd przy aktualizacji: {response.StatusCode}";
+                    return;
+                }
+
+                string successMsg = "Zlecenie zostało pomyślnie zaktualizowane!";
+
+                ShowAlert(successMsg, "success");
+            }
+            else
+            {
+                // dodawanie nowej usterki z opcjonalnym zdjęciem
+                using var content = new MultipartFormDataContent();
+                content.Add(new StringContent(contractModel.Name ?? ""), "Name");
+                content.Add(new StringContent(contractModel.ContractNumber ?? ""), "ContractNumber");
+                content.Add(new StringContent(contractModel.Description ?? ""), "Description");
+                content.Add(new StringContent(contractModel.StartDate.ToString("o")), "StartDate");
+                content.Add(new StringContent(contractModel.EndDate.ToString("o")), "EndDate");
+                content.Add(new StringContent(contractModel.Status ?? "Nowa"), "Status");
+                content.Add(new StringContent(contractModel.ContractorId?.ToString() ?? ""), "ContractorId");
+
+                response = await Http.PostAsync("api/Contract", content);
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    // BŁĄD: Zostajemy w modalu
+                    modalErrorMessage = $"Nie udało się dodać zlecenia. Kod błędu: {response.StatusCode}";
+                    return; // PRZERYWAMY - nie zamykamy modala
+                }
+
+                ShowAlert("Nowa zlecenie zostało dodane pomyślnie!", "success");
+            }
+
+            editMode = false;
+            await HideModal();
+            contractModel = new();
+            await ApplyFilters();
+        }
+        catch (Exception ex)
+        {
+            if (ex.Message.Contains("Failed to fetch") || ex.Message.Contains("TypeError"))
+            {
+                modalErrorMessage = "Nie można połączyć się z serwerem. Sprawdź połączenie z internetem lub spróbuj później.";
+            }
+            else
+            {
+                modalErrorMessage = $"Wystąpił nieoczekiwany błąd: {ex.Message}";
+            }
+        }
+    }
+
+    private async Task DeleteContract(int id)
+    {
+        var confirmed = await JSRuntime.InvokeAsync<bool>("confirm", $"Czy na pewno chcesz usunąć zlecenie ID: {id}?");
+        if (confirmed)
+        {
+            var response = await Http.DeleteAsync($"api/Contract/{id}");
+
+            if (response.IsSuccessStatusCode)
+            {
+                ShowAlert("Zlecenie zostało usunięte.", "warning");
+                await ApplyFilters();
+            }
+            else
+            {
+                ShowAlert("Nie udało się usunąć zlecenia.", "danger");
+            }
+        }
+    }
+
+    private void ShowAlert(string message, string type = "success")
+    {
+        mainAlertMessage = message;
+        mainAlertClass = $"alert-{type}";
+
+        _ = Task.Delay(5000).ContinueWith(_ =>
+        {
+            mainAlertMessage = null;
+            InvokeAsync(StateHasChanged);
+        });
+    }
+}

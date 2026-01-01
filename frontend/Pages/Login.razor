@@ -1,0 +1,147 @@
+﻿@page "/login"
+@using System.Net.Http.Json
+@inject HttpClient Http
+@using CHFrontend.Services
+@inject NavigationManager Navigation
+@inject AuthService AuthService
+@using CHFrontend.Helpers
+@using System.ComponentModel.DataAnnotations
+
+@if (isLoading)
+{
+    <div class="alert alert-success">
+        Zalogowano pomyślnie
+    </div>
+}
+else if (!string.IsNullOrEmpty(errorMessage))
+{
+    <div class="alert alert-danger">@errorMessage</div>
+}
+
+<div class="row justify-content-center py-4">
+    <div class="col-md-5 col-xl-5">
+        <div id="loginPage" class="auth-page active">
+            <div class="card overflow-hidden shadow">
+                <div class="text-center bg-primary px-2 py-4">
+                    <div class="icon-circle-large text-light">
+                        <i class="bi bi-building"></i>
+                    </div>
+                    <h3 class="mb-2 text-light">ConstructHub</h3>
+                    <p class="mb-0 text-light">Zaloguj się do swojego konta</p>
+                </div>
+                <div class="card-body p-4">
+                    <EditForm EditContext="editContext" OnValidSubmit="HandleLogin">
+                        <DataAnnotationsValidator />
+                        <div class="mb-3">
+                            <label for="username" class="form-label">Login</label>
+                            <div class="input-group">
+                                <span class="input-group-text">
+                                    <i class="bi bi-person"></i>
+                                </span>
+                                <InputText class="form-control" @bind-Value="loginModel.UserName" placeholder="Wprowadź login" id="username" />
+                                <ValidationMessage For="@(() => loginModel.UserName)" class="invalid-feedback" />
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="password" class="form-label">Hasło</label>
+                            <div class="input-group">
+                                <span class="input-group-text">
+                                    <i class="bi bi-lock"></i>
+                                </span>
+                                <InputText class="form-control" @bind-Value="loginModel.Password" type="password" placeholder="Wprowadź hasło" id="password" />
+                                <ValidationMessage For="@(() => loginModel.Password)" class="invalid-feedback" />
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn btn-outline-primary w-100 mt-1">
+                            <i class="bi bi-door-open me-2"></i>Zaloguj się
+                        </button>
+                    </EditForm>
+
+                    <div class="divider">
+                        <span>lub</span>
+                    </div>
+
+                    <div class="text-center">
+                        <p class="mb-0">
+                            Nie masz konta?
+                            <NavLink class="text-primary fw-semibold text-decoration-none" href="register">
+                                Zarejestruj się
+                            </NavLink>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private LoginInputModel loginModel = new();
+    private bool isLoading = false;
+    private string? errorMessage;
+
+    private EditContext editContext;
+
+    protected override void OnInitialized()
+    {
+        editContext = new(loginModel);
+        editContext.SetFieldCssClassProvider(new BootstrapFieldCssClassProvider());
+    }
+
+    private async Task HandleLogin()
+    {
+        isLoading = true;
+        errorMessage = null;
+        
+        try
+        {
+            // Cała logika HTTP, tokenów i LocalStorage jest teraz ukryta w AuthService
+            var result = await AuthService.LoginAsync(loginModel.UserName, loginModel.Password);
+
+            if (result.Success)
+            {
+                // LOGOWANIE UDANE
+                if (result.Data.RequiresPasswordChange)
+                {
+                    Navigation.NavigateTo("/change-password");
+                }
+                else
+                {
+                    Navigation.NavigateTo("/");
+                }
+            }
+            else
+            {
+                // LOGOWANIE NIEUDANE - Wyświetlamy dokładnie to, co przysłał backend
+                // Np. "Twoje konto zostało zablokowane..."
+                errorMessage = result.ErrorMessage;
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Wystąpił błąd krytyczny: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    public class LoginInputModel
+    {
+        [Required(ErrorMessage = "Login jest wymagany.")]
+        public string UserName { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Hasło jest wymagane.")]
+        public string Password { get; set; } = string.Empty;
+    }
+
+    public class LoginResponse
+    {
+        public string token { get; set; } = string.Empty;
+        public DateTime expiration { get; set; }
+        public bool requiresPasswordChange { get; set; }
+    }
+}

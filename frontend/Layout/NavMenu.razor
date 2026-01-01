@@ -1,0 +1,102 @@
+﻿@inject NavigationManager Navigation
+@inject AuthService AuthService
+@using Microsoft.AspNetCore.Components.Authorization
+@using CHFrontend.Helpers
+@using CHFrontend.Services
+
+<nav class="navbar navbar-expand-md navbar-gradient" data-bs-theme="dark">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="#">ConstructHub</a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navMenu_NavbarToggler" aria-controls="navMenu_NavbarToggler" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navMenu_NavbarToggler">
+            <ul class="navbar-nav me-auto mb-2 mb-md-0">
+                <li class="nav-item">
+                    <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
+                        <i class="bi bi-speedometer2"></i> Pulpit
+                    </NavLink>
+                </li>
+                <li class="nav-item">
+                    <NavLink class="nav-link" href="contractors">
+                        <i class="bi bi-person-lines-fill"></i> Wykonawcy
+                    </NavLink>
+                </li>
+                <li class="nav-item">
+                    <NavLink class="nav-link" href="issues">
+                        <i class="bi bi-wrench"></i> Usterki
+                    </NavLink>
+                </li>
+                <li class="nav-item">
+                    <NavLink class="nav-link" href="contracts">
+                        <i class="bi bi-file-earmark-post"></i> Zlecenia
+                    </NavLink>
+                </li>
+                <li class="nav-item">
+                    <NavLink class="nav-link" href="protocols">
+                        <i class="bi bi-file-earmark-check"></i> Protokoły
+                    </NavLink>
+                </li>
+                <li class="nav-item">
+                    <NavLink class="nav-link" href="users">
+                        <i class="bi bi-people-fill"></i> Użytkownicy
+                    </NavLink>
+                </li>
+                
+            </ul>
+            <ul class="navbar-nav mb-2 mb-md-0">
+                <AuthorizeView>
+                    <Authorized>
+                        @* TO WIDZI ZALOGOWANY *@
+                        <li class="nav-item d-flex align-items-center me-2">
+                            <span class="text-light">
+                                <i class="bi bi-person-circle me-1"></i>
+                                @* Próbujemy wyświetlić nazwę. Jeśli null, wyświetli pusty ciąg *@
+                                <b>@context.User.Identity?.Name</b>
+                            </span>
+                        </li>
+                        <li class="nav-item">
+                            <button class="nav-link btn btn-link" @onclick="HandleLogout">
+                                <i class="bi bi-box-arrow-right"></i> Wyloguj
+                            </button>
+                        </li>
+                    </Authorized>
+                    <NotAuthorized>
+                        @* TO WIDZI NIEZALOGOWANY *@
+                        <li class="nav-item">
+                            <NavLink href="register" class="nav-link">
+                                <i class="bi bi-pencil-square"></i> Rejestracja
+                            </NavLink>
+                        </li>
+                        <li class="nav-item">
+                            <NavLink href="login" class="nav-link">
+                                <i class="bi bi-door-open"></i> Logowanie
+                            </NavLink>
+                        </li>
+                    </NotAuthorized>
+                </AuthorizeView>
+
+            </ul>
+        </div>
+    </div>
+</nav>
+
+@code {
+    private bool collapseNavMenu = true;
+    // private bool isLoggedIn;
+
+    private string? NavMenuCssClass => collapseNavMenu ? "collapse" : null;
+
+    private void ToggleNavMenu()
+    {
+        collapseNavMenu = !collapseNavMenu;
+    }
+
+    private async Task HandleLogout()
+    {
+        //Delegujemy zadanie do serwisu(to on wie, jakie klucze usunąć)
+        await AuthService.Logout();
+        //Przekierowujemy (forceLoad: true czyści pamięć RAM przeglądarki dla pewności)
+        Navigation.NavigateTo("/login", forceLoad: true);
+    }
+}

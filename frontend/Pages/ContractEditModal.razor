@@ -1,0 +1,177 @@
+﻿@using CHFrontend.Models
+@using CHFrontend.Helpers
+@inject HttpClient Http
+
+<div class="modal fade" id="contractModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+
+            <div class="modal-header">
+                <h5 class="modal-title">@modalTitle</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+
+            <div class="modal-body">
+                <EditForm OnValidSubmit="SaveContract" EditContext="@editContext">
+                    <div class="row">
+                        <DataAnnotationsValidator />
+                        @if (!string.IsNullOrEmpty(modalErrorMessage))
+                        {
+                            <div class="alert alert-danger d-flex align-items-center mb-3">
+                                <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                                <div>@modalErrorMessage</div>
+                            </div>
+                        }
+
+                        <div class="col-12 col-md-3 mb-3">
+                            <label>Numer zlecenia *</label>
+                            <InputText class="form-control" @bind-Value="contractModel.ContractNumber" />
+                            <ValidationMessage For="@(() => contractModel.ContractNumber)" class="invalid-feedback" />
+                        </div>
+
+                        <div class="col-12 col-md-9 mb-3">
+                            <label>Nazwa zlecenia *</label>
+                            <InputText class="form-control" @bind-Value="contractModel.Name" />
+                            <ValidationMessage For="@(() => contractModel.Name)" class="invalid-feedback" />
+                        </div>
+
+                        <div class="col-12 mb-3">
+                            <label>Opis przedmiotu zlecenia *</label>
+                            <InputTextArea class="form-control" @bind-Value="contractModel.Description" rows="4" />
+                            <ValidationMessage For="@(() => contractModel.Description)" class="invalid-feedback" />
+                        </div>
+
+                        <div class="col-12 col-md-6 mb-3">
+                            <label>Data początkowa</label>
+                            <InputDate class="form-control" @bind-Value="contractModel.StartDate" />
+                            <ValidationMessage For="@(() => contractModel.StartDate)" class="invalid-feedback" />
+                        </div>
+
+                        <div class="col-12 col-md-6 mb-3">
+                            <label>Data końcowa</label>
+                            <InputDate class="form-control" @bind-Value="contractModel.EndDate" />
+                            <ValidationMessage For="@(() => contractModel.EndDate)" class="invalid-feedback" />
+                        </div>
+
+                        <div class="col-12 col-md-6 mb-3">
+                            <label>Status *</label>
+                            <select class="form-select" @bind="contractModel.Status">
+                                <option value="Nowa">Nowa</option>
+                                <option value="W trakcie">W trakcie</option>
+                                <option value="Zakończona">Zakończona</option>
+                            </select>
+                            <ValidationMessage For="@(() => contractModel.Status)" class="invalid-feedback" />
+                        </div>
+
+                        <div class="col-12 col-md-6 mb-3">
+                            <label>Wykonawca *</label>
+                            <select class="form-select" @bind="contractModel.ContractorId">
+                                @foreach (var c in contractors)
+                                {
+                                    <option value="@c.Id">@c.CompanyName</option>
+                                }
+                            </select>
+                            <ValidationMessage For="@(() => contractModel.ContractorId)" class="invalid-feedback" />
+                        </div>
+                    </div>
+
+                    <div class="text-end">
+                        <button class="btn btn-primary" type="submit">
+                            @(editMode ? "Zapisz zmiany" : "Dodaj usterkę")
+                        </button>
+                    </div>
+                </EditForm>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public bool editMode { get; set; }
+    [Parameter] public ContractDto contractModel { get; set; }
+    [Parameter] public List<ContractorDto> contractors { get; set; }
+    [Parameter] public string modalTitle { get; set; }
+    [Parameter] public string modalErrorMessage { get; set; }
+
+    private EditContext editContext;
+
+    protected override void OnInitialized()
+    {
+        editContext = new(contractModel);
+        editContext.SetFieldCssClassProvider(new BootstrapFieldCssClassProvider());
+    }
+
+
+    private async Task SaveContract()
+    {
+        modalErrorMessage = null; // Czyścimy błędy w modalu
+
+        try
+        {
+            HttpResponseMessage? response = null;
+
+            if (editMode)
+            {
+                // aktualizacja danych
+                using var content = new MultipartFormDataContent();
+                content.Add(new StringContent(contractModel.Name ?? ""), "Name");
+                content.Add(new StringContent(contractModel.ContractNumber ?? ""), "ContractNumber");
+                content.Add(new StringContent(contractModel.Description ?? ""), "Description");
+                content.Add(new StringContent(contractModel.StartDate.ToString("o")), "StartDate");
+                content.Add(new StringContent(contractModel.EndDate.ToString("o")), "EndDate");
+                content.Add(new StringContent(contractModel.Status ?? "Nowa"), "Status");
+                content.Add(new StringContent(contractModel.ContractorId?.ToString() ?? ""), "ContractorId");
+                response = await Http.PutAsync($"api/Contract/{contractModel.Id}", content);
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    modalErrorMessage = $"Błąd przy aktualizacji: {response.StatusCode}";
+                    return;
+                }
+
+                string successMsg = "Zlecenie zostało pomyślnie zaktualizowane!";
+
+                // ShowAlert(successMsg, "success");
+            }
+            else
+            {
+                // dodawanie nowej usterki z opcjonalnym zdjęciem
+                using var content = new MultipartFormDataContent();
+                content.Add(new StringContent(contractModel.Name ?? ""), "Name");
+                content.Add(new StringContent(contractModel.ContractNumber ?? ""), "ContractNumber");
+                content.Add(new StringContent(contractModel.Description ?? ""), "Description");
+                content.Add(new StringContent(contractModel.StartDate.ToString("o")), "StartDate");
+                content.Add(new StringContent(contractModel.EndDate.ToString("o")), "EndDate");
+                content.Add(new StringContent(contractModel.Status ?? "Nowa"), "Status");
+                content.Add(new StringContent(contractModel.ContractorId?.ToString() ?? ""), "ContractorId");
+
+                response = await Http.PostAsync("api/Contract", content);
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    // BŁĄD: Zostajemy w modalu
+                    modalErrorMessage = $"Nie udało się dodać zlecenia. Kod błędu: {response.StatusCode}";
+                    return; // PRZERYWAMY - nie zamykamy modala
+                }
+
+                // ShowAlert("Nowa usterka została dodana pomyślnie!", "success");
+            }
+
+            editMode = false;
+            // await HideModal();
+            contractModel = new();
+            // await ApplyFilters();
+        }
+        catch (Exception ex)
+        {
+            if (ex.Message.Contains("Failed to fetch") || ex.Message.Contains("TypeError"))
+            {
+                modalErrorMessage = "Nie można połączyć się z serwerem. Sprawdź połączenie z internetem lub spróbuj później.";
+            }
+            else
+            {
+                modalErrorMessage = $"Wystąpił nieoczekiwany błąd: {ex.Message}";
+            }
+        }
+    }
+}
